@@ -1,0 +1,8 @@
+numpy
+torch
+matplotlib
+pyyaml
+protobuf
+grpcio
+
+-e .
