@@ -98,11 +98,6 @@ def load_environment(env_name: str, no_graphics: bool, worker_id: int) \
     return env, engine_configuration_channel
 
 
-def predict_total_time(time_elapsed, episodes_elapsed, episodes_total):
-    time_per_episode = time_elapsed / episodes_elapsed
-    return episodes_total * time_per_episode
-
-
 def format_timedelta(timedelta):
     total_seconds = int(timedelta)
     hours, remainder = divmod(total_seconds, 3600)

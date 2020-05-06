@@ -4,5 +4,7 @@ matplotlib
 pyyaml
 protobuf
 grpcio
+gym
+Box2D
 
 -e .
