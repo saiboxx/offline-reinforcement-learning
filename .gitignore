@@ -130,6 +130,7 @@ dmypy.json
 
 # PyCharm
 .idea/
+csharp_timers.json
 
 # Data
 data/

@@ -5,6 +5,7 @@ import numpy as np
 import gym
 import pickle
 from src.agents import RandomAgent, DQNAgent
+from src.utils.data import DataSaver
 
 
 def main():
@@ -17,18 +18,13 @@ def run(cfg: dict):
     print('Loading environment {}.'.format(cfg['GYM_ENV']))
     env = gym.make(cfg['GYM_ENV'])
     env.reset()
-    observation_space = env.observation_space.shape[0]
+    observation_space = env.observation_space.shape
     action_space = env.action_space.n
-    state = np.zeros((1, observation_space))
+    state = np.zeros(observation_space)
 
     print('Creating Agent.')
-    agent = RandomAgent(observation_space, action_space)
-    
-    states = []
-    actions = []
-    rewards = []
-    dones = []
-    new_states = []
+    agent = DQNAgent(observation_space, action_space)
+    saver = DataSaver(cfg['DATA_PATH'])
 
     print('Starting training with {} steps.'.format(cfg['STEPS']))
     mean_step_reward = []
@@ -42,16 +38,9 @@ def run(cfg: dict):
         env.render()
         new_state, reward, done, info = env.step(int(action))
 
-        new_state = np.reshape(new_state, (1, observation_space))
-
         agent.add_experience(state, action, reward, done, new_state)
         agent.learn()
-
-        states.append(state)
-        actions.append(action)
-        rewards.append(reward)
-        dones.append(done)
-        new_states.append(new_state)
+        saver.save(state, action, reward, done, new_state)
 
         mean_step_reward.append(reward)
         reward_cur_episode.append(reward)
@@ -72,16 +61,7 @@ def run(cfg: dict):
 
     print('Closing environment.')
     env.close()
-
-    print('Saving generated experiences.')
-    states = np.vstack(states)
-    actions = np.array(actions)
-    rewards = np.array(rewards)
-    dones = np.array(dones)
-    new_states = np.vstack(new_states)
-    with open('data/' + cfg['GYM_ENV'] + '.pkl', 'wb') as output:
-        data = (states, actions, rewards, dones, new_states)
-        pickle.dump(data, output)
+    saver.close()
 
 
 def format_timedelta(timedelta):

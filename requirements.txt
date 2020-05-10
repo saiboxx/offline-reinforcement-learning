@@ -1,10 +1,12 @@
 numpy
 torch
+torchvision
 matplotlib
 pyyaml
 protobuf
 grpcio
 gym
 Box2D
+pillow
 
 -e .

@@ -1,13 +1,11 @@
 ###############################################################################
 # SET GENERAL PARAMETERS
 ###############################################################################
-EXECUTABLE: basic
-STEPS: 1000000
-VERBOSE_STEPS: 10
-CHECKPOINTS: 50000
-NO_GRAPHICS: False
+STEPS: 2000
+VERBOSE_STEPS: 100
+DATA_PATH: /media/Dataz/Space_Invaders
 
 ###############################################################################
 # SET GYM PARAMETERS
 ###############################################################################
-GYM_ENV: LunarLander-v2
+GYM_ENV: SpaceInvaders-v0

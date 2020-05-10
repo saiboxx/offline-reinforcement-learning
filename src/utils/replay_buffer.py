@@ -44,10 +44,10 @@ class ReplayBuffer(object):
             del self.dones[0]
             del self.new_states[0]
 
-        self.states.append(state.flatten())
+        self.states.append(state)
         self.actions.append(action.flatten())
         self.rewards.append(reward)
         self.dones.append(done)
-        self.new_states.append(new_state.flatten())
+        self.new_states.append(new_state)
         self.cur_buffer_size = len(self.states)
 
