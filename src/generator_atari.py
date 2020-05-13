@@ -5,7 +5,7 @@ import numpy as np
 import gym
 import pickle
 from src.agents import RandomAgent, DQNAgent
-from src.utils.data import DataSaver
+from src.utils.data import DataSaver, Summary
 
 
 def main():
@@ -25,6 +25,8 @@ def run(cfg: dict):
     print('Creating Agent.')
     agent = DQNAgent(observation_space, action_space)
     saver = DataSaver(cfg['DATA_PATH'])
+    summary = Summary(cfg['SUMMARY_PATH'], agent.name)
+    agent.add_summary_writer(summary)
 
     print('Starting training with {} steps.'.format(cfg['STEPS']))
     mean_step_reward = []
@@ -32,6 +34,8 @@ def run(cfg: dict):
     reward_last_episode = 0
     episode = 1
     start_time = time.time()
+    start_time_episode = time.time()
+
     for steps in range(1, cfg['STEPS'] + 1):
 
         action = agent.act(state)
@@ -45,6 +49,8 @@ def run(cfg: dict):
         mean_step_reward.append(reward)
         reward_cur_episode.append(reward)
 
+        summary.add_scalar('Step Reward', reward)
+
         if steps % cfg['VERBOSE_STEPS'] == 0:
             elapsed_time = time.time() - start_time
             print('Ep. {0:>4} with {1:>7} steps total; {2:8.2f} last ep. reward; {3:+.3f} step reward; {4}h elapsed' \
@@ -56,8 +62,15 @@ def run(cfg: dict):
             reward_cur_episode = []
             episode += 1
             env.reset()
+            duration_last_episode = time.time() - start_time_episode
+            start_time_episode = time.time()
+            summary.add_scalar('Episode Reward', reward_last_episode, True)
+            summary.add_scalar('Episode Duration', duration_last_episode, True)
+            summary.adv_episode()
+            summary.writer.flush()
 
         state = new_state
+        summary.adv_step()
 
     print('Closing environment.')
     env.close()

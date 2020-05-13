@@ -55,8 +55,9 @@ class DataSaver(object):
 
 
 class Summary(object):
-    def __init__(self, directory: str):
+    def __init__(self, directory: str, agent_name: str):
         self.directory = os.path.join(directory,
+                                      agent_name,
                                       datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         self.writer = SummaryWriter(log_dir=self.directory)
         self.step = 1
