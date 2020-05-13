@@ -1,6 +1,8 @@
 numpy
 torch
 torchvision
+torchsummary
+tensorboard
 matplotlib
 pyyaml
 protobuf

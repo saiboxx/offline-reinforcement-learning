@@ -2,7 +2,7 @@
 # SET GENERAL PARAMETERS
 ###############################################################################
 GYM_ENV: Breakout-v0
-STEPS: 500
-VERBOSE_STEPS: 100
+STEPS: 1000000
+VERBOSE_STEPS: 1000
 DATA_PATH: data
 SUMMARY_PATH: logs
