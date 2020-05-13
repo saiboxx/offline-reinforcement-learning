@@ -156,9 +156,9 @@ class DoubleDQNAgent(Agent):
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('Utilizing device {}'.format(self.device))
-        self.policy_a = DQNCNN(self.input_size + (self.channels,), action_space).to(self.device)
-        self.policy_b = DQNCNN(self.input_size + (self.channels,), action_space).to(self.device)
-        self.policy_a.load_state_dict(self.policy_b.state_dict())
+        self.policy = DQNCNN(self.input_size + (self.channels,), action_space).to(self.device)
+        self.target = DQNCNN(self.input_size + (self.channels,), action_space).to(self.device)
+        self.target.load_state_dict(self.policy.state_dict())
         self.target.eval()
         self.optimizer = Adam(self.policy.parameters(), lr=0.0001)
         self.loss = SmoothL1Loss()
@@ -207,12 +207,15 @@ class DoubleDQNAgent(Agent):
         # Get Q(s,a) for actions taken
         state_action_values = self.policy(state).gather(1, action)
 
-        # Get V(s') for the new states w/ mask for final state
-        next_state_values, _ = torch.max(self.target(new_state).detach(), dim=1)
+        # Get action for next state from greedy policy
+        new_action = torch.argmax(self.policy(new_state).detach(), dim=1)
+
+        # Get V(s') for the new states w/ action decided by policy w/ mask for final state
+        next_state_values = self.target(new_state).detach().gather(1, new_action.unsqueeze(1))
         next_state_values[done] = 0
 
         # Get expected Q values
-        expected_state_action_values = (next_state_values * 0.999) + reward
+        expected_state_action_values = (next_state_values.squeeze() * 0.999) + reward
 
         # Compute loss
         loss = self.loss(state_action_values, expected_state_action_values.unsqueeze(-1))
@@ -233,3 +236,6 @@ class DoubleDQNAgent(Agent):
                 and self.steps_done % self.summary_checkpoint == 0:
             self.summary_writer.add_scalar('Loss', loss)
             self.summary_writer.add_scalar('Expected Q Values', expected_state_action_values.mean())
+
+    def print_model(self):
+        torchsummary.summary(self.policy, input_size=(self.channels,) + self.input_size)

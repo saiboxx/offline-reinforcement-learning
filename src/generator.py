@@ -4,7 +4,7 @@ import time
 import numpy as np
 import gym
 import pickle
-from src.agents import RandomAgent, DQNAgent
+from src.agents import RandomAgent, DQNAgent, DoubleDQNAgent
 from src.utils.data import DataSaver, Summary
 
 
@@ -23,7 +23,7 @@ def run(cfg: dict):
     state = np.zeros(observation_space)
 
     print('Creating Agent.')
-    agent = DQNAgent(observation_space, action_space)
+    agent = DoubleDQNAgent(observation_space, action_space)
     saver = DataSaver(cfg['DATA_PATH'])
     summary = Summary(cfg['SUMMARY_PATH'], agent.name)
     agent.print_model()
