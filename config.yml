@@ -1,8 +1,9 @@
 ###############################################################################
 # SET GENERAL PARAMETERS
 ###############################################################################
-GYM_ENV: Breakout-v0
-STEPS: 1000000
+GYM_ENV: PongDeterministic-v4
+STEPS: 2000000
 VERBOSE_STEPS: 1000
+WARM_UP_STEPS: 50000
 DATA_PATH: data
 SUMMARY_PATH: logs

@@ -4,7 +4,7 @@ import torch
 from torch.optim import Adam
 from torch.nn import SmoothL1Loss
 import torchsummary
-from src.utils.networks import DQNCNN
+from src.utils.networks import DQNCNN, DQNDense, DQNCNNLight
 from src.utils.replay_buffer import ReplayBuffer
 from src.utils.data import Summary
 from torchvision.transforms import Compose, ToPILImage, Grayscale, Resize, ToTensor
@@ -76,13 +76,14 @@ class DQNAgent(Agent):
         self.steps_done = 0
         self.eps_start = 0.99
         self.eps_end = 0.05
-        self.eps_decay = 5000
+        self.eps_decay = (self.eps_start - self.eps_end) / 250000
+        self.eps_threshold = self.eps_start
 
     def act(self, state: np.ndarray) -> np.ndarray:
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
-                        np.exp(-1. * self.steps_done / self.eps_decay)
+        if self.eps_threshold > self.eps_end:
+            self.eps_threshold -= self.eps_decay
         self.steps_done += 1
-        if torch.rand(1) > eps_threshold:
+        if torch.rand(1) > self.eps_threshold:
             with torch.no_grad():
                 state = self.transform(np.uint8(state)).unsqueeze(0).to(self.device)
                 action = torch.argmax(self.policy(state))
@@ -150,17 +151,17 @@ class DoubleDQNAgent(Agent):
         self.name = 'DoubleDQNAgent'
         self.summary_checkpoint = 100
 
-        self.target_update_steps = 2000
+        self.target_update_steps = 5000
         self.input_size = (110, 84)
         self.channels = 1
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('Utilizing device {}'.format(self.device))
-        self.policy = DQNCNN(self.input_size + (self.channels,), action_space).to(self.device)
-        self.target = DQNCNN(self.input_size + (self.channels,), action_space).to(self.device)
+        self.policy = DQNCNNLight(self.input_size + (self.channels,), action_space).to(self.device)
+        self.target = DQNCNNLight(self.input_size + (self.channels,), action_space).to(self.device)
         self.target.load_state_dict(self.policy.state_dict())
         self.target.eval()
-        self.optimizer = Adam(self.policy.parameters(), lr=0.0001)
+        self.optimizer = Adam(self.policy.parameters(), lr=0.00025)
         self.loss = SmoothL1Loss()
 
         self.transform = Compose([ToPILImage(), Resize(self.input_size), Grayscale(), ToTensor()])
@@ -170,13 +171,14 @@ class DoubleDQNAgent(Agent):
         self.steps_done = 0
         self.eps_start = 0.99
         self.eps_end = 0.05
-        self.eps_decay = 5000
+        self.eps_decay = (self.eps_start - self.eps_end) / 250000
+        self.eps_threshold = self.eps_start
 
     def act(self, state: np.ndarray) -> np.ndarray:
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
-                        np.exp(-1. * self.steps_done / self.eps_decay)
+        if self.eps_threshold > self.eps_end:
+            self.eps_threshold -= self.eps_decay
         self.steps_done += 1
-        if torch.rand(1) > eps_threshold:
+        if torch.rand(1) > self.eps_threshold:
             with torch.no_grad():
                 state = self.transform(np.uint8(state)).unsqueeze(0).to(self.device)
                 action = torch.argmax(self.policy(state))

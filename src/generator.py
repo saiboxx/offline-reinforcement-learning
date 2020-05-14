@@ -3,7 +3,8 @@ import yaml
 import time
 import numpy as np
 import gym
-import pickle
+from tqdm import tqdm
+import random
 from src.agents import RandomAgent, DQNAgent, DoubleDQNAgent
 from src.utils.data import DataSaver, Summary
 
@@ -19,7 +20,8 @@ def run(cfg: dict):
     env = gym.make(cfg['GYM_ENV'])
     env.reset()
     observation_space = env.observation_space.shape
-    action_space = env.action_space.n
+    action_space = 3
+    action_map = {0: 0, 1: 2, 2: 3}
     state = np.zeros(observation_space)
 
     print('Creating Agent.')
@@ -28,6 +30,15 @@ def run(cfg: dict):
     summary = Summary(cfg['SUMMARY_PATH'], agent.name)
     agent.print_model()
     agent.add_summary_writer(summary)
+
+    print('Starting warm up.')
+    for _ in tqdm(range(cfg['WARM_UP_STEPS'])):
+        action = np.asarray(random.randint(0, action_space - 1))
+        env.render()
+        new_state, reward, done, info = env.step(action_map[int(action)])
+        agent.add_experience(state, action, reward, done, new_state)
+        if done:
+            env.reset()
 
     print('Starting training with {} steps.'.format(cfg['STEPS']))
     mean_step_reward = []
@@ -41,7 +52,7 @@ def run(cfg: dict):
 
         action = agent.act(state)
         env.render()
-        new_state, reward, done, info = env.step(int(action))
+        new_state, reward, done, info = env.step(action_map[int(action)])
 
         agent.add_experience(state, action, reward, done, new_state)
         agent.learn()

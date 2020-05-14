@@ -1,7 +1,7 @@
 from torch import nn
 
 
-class DQN(nn.Module):
+class DQNDense(nn.Module):
 
     def __init__(self, observation_space, action_space):
         super(DQN, self).__init__()
@@ -57,6 +57,55 @@ class DQNCNN(nn.Module):
         linear_input_size = conv_w * conv_h * filters[2]
         self.fc1 = nn.Linear(linear_input_size, 512)
         self.out = nn.Linear(512, action_space)
+
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.relu(x)
+        x = self.conv2(x)
+        x = self.relu(x)
+        x = self.conv3(x)
+        x = self.relu(x)
+        x = self.fc1(x.view(x.size(0), -1))
+        x = self.relu(x)
+        x = self.out(x)
+        return x
+
+
+class DQNCNNLight(nn.Module):
+
+    def __init__(self, observation_space, action_space):
+        super(DQNCNNLight, self).__init__()
+        input_height = observation_space[0]
+        input_width = observation_space[1]
+        input_channel = observation_space[2]
+
+        kernel_size = [8, 4, 3]
+        stride = [4, 2, 1]
+        filters = [16, 32, 32]
+
+        self.conv1 = nn.Conv2d(in_channels=input_channel,
+                               out_channels=filters[0],
+                               kernel_size=kernel_size[0],
+                               stride=stride[0])
+        self.conv2 = nn.Conv2d(in_channels=filters[0],
+                               out_channels=filters[1],
+                               kernel_size=kernel_size[1],
+                               stride=stride[1])
+        self.conv3 = nn.Conv2d(in_channels=filters[1],
+                               out_channels=filters[2],
+                               kernel_size=kernel_size[2],
+                               stride=stride[2])
+
+        def size_out(size, kernel_size, stride):
+            return (size - (kernel_size - 1) - 1) // stride + 1
+
+        conv_w = size_out(size_out(size_out(input_width, kernel_size[0], stride[0]), kernel_size[1], stride[1]), kernel_size[2], stride[2])
+        conv_h = size_out(size_out(size_out(input_height, kernel_size[0], stride[0]), kernel_size[1], stride[1]), kernel_size[2], stride[2])
+        linear_input_size = conv_w * conv_h * filters[2]
+        self.fc1 = nn.Linear(linear_input_size, 128)
+        self.out = nn.Linear(128, action_space)
 
         self.relu = nn.ReLU()
 

@@ -4,6 +4,7 @@ torchvision
 torchsummary
 tensorboard
 matplotlib
+tqdm
 pyyaml
 protobuf
 grpcio
