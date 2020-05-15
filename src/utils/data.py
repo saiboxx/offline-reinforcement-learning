@@ -4,6 +4,44 @@ import numpy as np
 from PIL import Image
 from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import Dataset
+from torchvision.transforms import Compose, ToTensor
+
+
+class EnvironmentDataset(Dataset):
+
+    def __init__(self, root: str):
+        self.root = root
+        with open(self.root + '/action/' + 'action.pkl', 'rb') as file:
+            self.actions = pickle.load(file)
+        with open(self.root + '/reward/' + 'reward.pkl', 'rb') as file:
+            self.rewards = pickle.load(file)
+        with open(self.root + '/done/' + 'done.pkl', 'rb') as file:
+            self.dones = pickle.load(file)
+        self.transform = Compose([ToTensor()])
+
+    def __len__(self) -> int:
+        return len(self.rewards)
+
+    def __getitem__(self, idx: int) -> dict:
+        state_img = os.path.join(self.root,
+                                 'state',
+                                 str(idx) + '.jpg')
+        new_state_img = os.path.join(self.root,
+                                     'new_state',
+                                     str(idx) + '.jpg')
+
+        state = self.transform(Image.open(state_img))
+        new_state = self.transform(Image.open(new_state_img))
+
+        sample = {
+            'state': state,
+            'action': self.actions[idx],
+            'reward': self.rewards[idx],
+            'done': self.dones[idx],
+            'new_state': new_state
+        }
+        return sample
 
 
 class DataSaver(object):
@@ -29,7 +67,6 @@ class DataSaver(object):
              reward: np.ndarray,
              done: np.ndarray,
              new_state: np.ndarray):
-
         state = Image.fromarray(np.uint8(state)).resize((110, 84)).convert('L')
         new_state = Image.fromarray(np.uint8(new_state)).resize((110, 84)).convert('L')
 

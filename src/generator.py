@@ -26,7 +26,7 @@ def run(cfg: dict):
 
     print('Creating Agent.')
     agent = DoubleDQNAgent(observation_space, action_space)
-    saver = DataSaver(cfg['DATA_PATH'])
+    saver = DataSaver(cfg['GEN_DATA_PATH'])
     summary = Summary(cfg['SUMMARY_PATH'], agent.name)
     agent.print_model()
     agent.add_summary_writer(summary)
@@ -56,7 +56,7 @@ def run(cfg: dict):
 
         agent.add_experience(state, action, reward, done, new_state)
         agent.learn()
-        #saver.save(state, action, reward, done, new_state)
+        saver.save(state, action, reward, done, new_state)
 
         mean_step_reward.append(reward)
         reward_cur_episode.append(reward)

@@ -2,8 +2,20 @@
 # SET GENERAL PARAMETERS
 ###############################################################################
 GYM_ENV: PongDeterministic-v4
-STEPS: 2000000
+STEPS: 1000
 VERBOSE_STEPS: 1000
-WARM_UP_STEPS: 50000
-DATA_PATH: data
+WARM_UP_STEPS: 0
 SUMMARY_PATH: logs
+
+###############################################################################
+# SET GENERATOR PARAMETERS
+###############################################################################
+GEN_DATA_PATH: data
+
+
+###############################################################################
+# SET OFFLINE TRAINING PARAMETERS
+###############################################################################
+TRAIN_DATA_PATH: data
+EPOCHS: 2
+BATCH_SIZE: 32
