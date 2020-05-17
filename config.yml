@@ -1,10 +1,11 @@
 ###############################################################################
 # SET GENERAL PARAMETERS
 ###############################################################################
-GYM_ENV: PongDeterministic-v4
-STEPS: 1000
+ATARI_ENV: PongDeterministic-v4
+RENDER: False
+STEPS: 500000
 VERBOSE_STEPS: 1000
-WARM_UP_STEPS: 0
+WARM_UP_STEPS: 50000
 SUMMARY_PATH: logs
 
 ###############################################################################
@@ -16,6 +17,8 @@ GEN_DATA_PATH: data
 ###############################################################################
 # SET OFFLINE TRAINING PARAMETERS
 ###############################################################################
-TRAIN_DATA_PATH: data
-EPOCHS: 2
-BATCH_SIZE: 32
+TRAIN_DATA_PATH: data/DQN_500k
+EPOCHS: 125
+BATCH_SIZE: 128
+EVAL_EPISODES: 10
+EVAL_RENDER: False

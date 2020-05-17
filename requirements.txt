@@ -5,6 +5,7 @@ torchsummary
 tensorboard
 matplotlib
 tqdm
+psutil
 pyyaml
 protobuf
 grpcio

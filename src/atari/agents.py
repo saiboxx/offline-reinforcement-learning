@@ -1,12 +1,13 @@
+import os
 import numpy as np
 import random
 import torch
 from torch.optim import Adam
 from torch.nn import SmoothL1Loss
 import torchsummary
-from src.utils.networks import DQNCNN, DQNDense, DQNCNNLight
-from src.utils.replay_buffer import ReplayBuffer
-from src.utils.data import Summary
+from src.atari.utils.networks import DQNCNN, DQNCNNLight
+from src.atari.utils.replay_buffer import ReplayBuffer
+from src.atari.utils.data import Summary
 from torchvision.transforms import Compose, ToPILImage, Grayscale, Resize, ToTensor
 
 
@@ -31,10 +32,13 @@ class Agent(object):
                        new_state: np.ndarray):
         pass
 
-    def learn(self):
+    def learn(self, *args):
         pass
 
     def print_model(self):
+        pass
+
+    def save(self, *args):
         pass
 
     def __repr__(self):
@@ -82,7 +86,6 @@ class DQNAgent(Agent):
     def act(self, state: np.ndarray) -> np.ndarray:
         if self.eps_threshold > self.eps_end:
             self.eps_threshold -= self.eps_decay
-        self.steps_done += 1
         if torch.rand(1) > self.eps_threshold:
             with torch.no_grad():
                 state = self.transform(np.uint8(state)).unsqueeze(0).to(self.device)
@@ -141,8 +144,17 @@ class DQNAgent(Agent):
             self.summary_writer.add_scalar('Loss', loss)
             self.summary_writer.add_scalar('Expected Q Values', expected_state_action_values.mean())
 
+        self.steps_done += 1
+
     def print_model(self):
         torchsummary.summary(self.policy, input_size=(self.channels,) + self.input_size)
+
+    def save(self):
+        directory = os.path.join('models',
+                                 self.name,
+                                 'model.pt')
+        os.makedirs('models/' + self.name, exist_ok=True)
+        torch.save(self.target, directory)
 
 
 class DoubleDQNAgent(DQNAgent):
@@ -192,16 +204,20 @@ class DoubleDQNAgent(DQNAgent):
             self.summary_writer.add_scalar('Loss', loss)
             self.summary_writer.add_scalar('Expected Q Values', expected_state_action_values.mean())
 
+        self.steps_done += 1
+
 
 class OfflineDQNAgent(Agent):
     def __init__(self, observation_space: int, action_space: int):
         super().__init__(observation_space, action_space)
         self.name = 'OfflineDQNAgent'
-        self.summary_checkpoint = 100
+        self.summary_checkpoint = 1000
+        self.batches_done = 0
 
         self.target_update_steps = 5000
         self.input_size = (110, 84)
         self.channels = 1
+        self.transform = Compose([ToPILImage(), Resize(self.input_size), Grayscale(), ToTensor()])
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('Utilizing device {}'.format(self.device))
@@ -209,7 +225,7 @@ class OfflineDQNAgent(Agent):
         self.target = DQNCNNLight(self.input_size + (self.channels,), action_space).to(self.device)
         self.target.load_state_dict(self.target.state_dict())
         self.target.eval()
-        self.optimizer = Adam(self.policy.parameters(), lr=0.0001)
+        self.optimizer = Adam(self.policy.parameters(), lr=0.00025)
         self.loss = SmoothL1Loss()
 
     def act(self, state: np.ndarray) -> np.ndarray:
@@ -218,17 +234,16 @@ class OfflineDQNAgent(Agent):
             action = torch.argmax(self.policy(state))
             return action.cpu().detach().numpy()
 
-    def learn(self):
-        state, action, reward, done, new_state = self.replay_buffer.sample()
+    def learn(self, batch: dict):
 
-        state = torch.stack(state).float().to(self.device)
-        action = torch.tensor(action).to(self.device)
-        reward = torch.tensor(reward).float().to(self.device)
-        done = torch.tensor(done).bool().to(self.device)
-        new_state = torch.stack(new_state).float().to(self.device)
+        state = batch['state'].float().to(self.device, non_blocking=True)
+        action = batch['action'].to(self.device, non_blocking=True)
+        reward = batch['reward'].float().to(self.device, non_blocking=True)
+        done = batch['done'].to(self.device, non_blocking=True)
+        new_state = batch['new_state'].float().to(self.device, non_blocking=True)
 
         # Get Q(s,a) for actions taken
-        state_action_values = self.policy(state).gather(1, action)
+        state_action_values = self.policy(state).gather(1, action.unsqueeze(-1))
 
         # Get V(s') for the new states w/ mask for final state
         next_state_values, _ = torch.max(self.target(new_state).detach(), dim=1)
@@ -248,14 +263,23 @@ class OfflineDQNAgent(Agent):
         self.optimizer.step()
 
         # Update target every n steps
-        if self.steps_done % self.target_update_steps == 0:
+        if self.batches_done % self.target_update_steps == 0:
             self.target.load_state_dict(self.policy.state_dict())
 
         # Log metrics
         if self.summary_writer is not None \
-                and self.steps_done % self.summary_checkpoint == 0:
+                and self.batches_done % self.summary_checkpoint == 0:
             self.summary_writer.add_scalar('Loss', loss)
             self.summary_writer.add_scalar('Expected Q Values', expected_state_action_values.mean())
 
+        self.batches_done += 1
+
     def print_model(self):
         torchsummary.summary(self.policy, input_size=(self.channels,) + self.input_size)
+
+    def save(self, epoch: int):
+        directory = os.path.join('models',
+                                 self.name,
+                                 str(epoch) + '.pt')
+        os.makedirs('models/' + self.name, exist_ok=True)
+        torch.save(self.target, directory)

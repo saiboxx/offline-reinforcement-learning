@@ -1,12 +1,11 @@
-import os
 import yaml
 import time
 import numpy as np
 import gym
 from tqdm import tqdm
 import random
-from src.agents import RandomAgent, DQNAgent, DoubleDQNAgent
-from src.utils.data import DataSaver, Summary
+from src.lunar.agents import RandomAgent, DQNAgent, DoubleDQNAgent
+from src.lunar.utils.data import DataSaver, Summary
 
 
 def main():
@@ -16,12 +15,11 @@ def main():
 
 
 def run(cfg: dict):
-    print('Loading environment {}.'.format(cfg['GYM_ENV']))
-    env = gym.make(cfg['GYM_ENV'])
+    print('Loading environment {}.'.format('LunarLander-v2'))
+    env = gym.make('LunarLander-v2')
     env.reset()
-    observation_space = env.observation_space.shape
-    action_space = 3
-    action_map = {0: 0, 1: 2, 2: 3}
+    observation_space = env.observation_space.shape[0]
+    action_space = env.action_space.n
     state = np.zeros(observation_space)
 
     print('Creating Agent.')
@@ -34,8 +32,9 @@ def run(cfg: dict):
     print('Starting warm up.')
     for _ in tqdm(range(cfg['WARM_UP_STEPS'])):
         action = np.asarray(random.randint(0, action_space - 1))
-        env.render()
-        new_state, reward, done, info = env.step(action_map[int(action)])
+        if cfg['RENDER']:
+            env.render()
+        new_state, reward, done, info = env.step(int(action))
         agent.add_experience(state, action, reward, done, new_state)
         if done:
             env.reset()
@@ -51,12 +50,13 @@ def run(cfg: dict):
     for steps in range(1, cfg['STEPS'] + 1):
 
         action = agent.act(state)
-        env.render()
-        new_state, reward, done, info = env.step(action_map[int(action)])
+        if cfg['RENDER']:
+            env.render()
+        new_state, reward, done, info = env.step(int(action))
 
         agent.add_experience(state, action, reward, done, new_state)
         agent.learn()
-        saver.save(state, action, reward, done, new_state)
+        saver.save(state, action, reward, done)
 
         mean_step_reward.append(reward)
         reward_cur_episode.append(reward)
@@ -85,6 +85,7 @@ def run(cfg: dict):
         summary.adv_step()
 
     print('Closing environment.')
+    agent.save()
     env.close()
     saver.close()
 
