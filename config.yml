@@ -3,8 +3,8 @@
 ###############################################################################
 ATARI_ENV: PongDeterministic-v4
 RENDER: False
-STEPS: 500000
-VERBOSE_STEPS: 1000
+STEPS: 2000000
+VERBOSE_STEPS: 10000
 WARM_UP_STEPS: 50000
 SUMMARY_PATH: logs
 
@@ -22,3 +22,13 @@ EPOCHS: 125
 BATCH_SIZE: 128
 EVAL_EPISODES: 10
 EVAL_RENDER: False
+
+
+###############################################################################
+# SET AUTOENCODER PARAMETERS
+###############################################################################
+AUTO_GENERATE: False
+AUTO_SAVE_PATH: autoencoder
+AUTO_EPOCHS: 100
+AUTO_BATCH_SIZE: 128
+

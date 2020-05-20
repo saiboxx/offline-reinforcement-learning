@@ -50,7 +50,8 @@ def train(cfg: dict):
         counter = 0
         while counter < cfg['EVAL_EPISODES']:
             action = agent.act(state)
-            env.render()
+            if cfg['EVAL_RENDER']:
+                env.render()
             state, reward, done, _ = env.step(int(action))
             rewards.append(reward)
             if done:

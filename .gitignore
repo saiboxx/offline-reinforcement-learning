@@ -136,3 +136,5 @@ csharp_timers.json
 data/
 executables/
 logs/
+autoencoder/
+models/

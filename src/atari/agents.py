@@ -66,11 +66,11 @@ class DQNAgent(Agent):
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('Utilizing device {}'.format(self.device))
-        self.policy = DQNCNNLight(self.input_size + (self.channels,), action_space).to(self.device)
-        self.target = DQNCNNLight(self.input_size + (self.channels,), action_space).to(self.device)
+        self.policy = DQNCNNLight((self.channels,) + self.input_size, action_space).to(self.device)
+        self.target = DQNCNNLight((self.channels,) + self.input_size, action_space).to(self.device)
         self.target.load_state_dict(self.target.state_dict())
         self.target.eval()
-        self.optimizer = Adam(self.policy.parameters(), lr=0.0001)
+        self.optimizer = Adam(self.policy.parameters(), lr=0.00025)
         self.loss = SmoothL1Loss()
 
         self.transform = Compose([ToPILImage(), Resize(self.input_size), Grayscale(), ToTensor()])

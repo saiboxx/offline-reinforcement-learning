@@ -24,7 +24,7 @@ def run(cfg: dict):
     state = np.zeros(observation_space)
 
     print('Creating Agent.')
-    agent = RandomAgent(observation_space, action_space)
+    agent = DQNAgent(observation_space, action_space)
     saver = DataSaver(cfg['GEN_DATA_PATH'])
     summary = Summary(cfg['SUMMARY_PATH'], agent.name)
     agent.print_model()
@@ -57,7 +57,7 @@ def run(cfg: dict):
 
         agent.add_experience(state, action, reward, done, new_state)
         agent.learn()
-        saver.save(state, action, reward, done)
+        #saver.save(state, action, reward, done)
 
         mean_step_reward.append(reward)
         reward_cur_episode.append(reward)

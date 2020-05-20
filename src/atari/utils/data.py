@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 from datetime import datetime
+import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import Dataset
 from torchvision.transforms import Compose, ToTensor
@@ -107,6 +108,19 @@ class EnvDatasetInMemory(Dataset):
             'new_state': self.states[idx + 1]
         }
         return sample
+
+
+class VAEDataset(Dataset):
+
+    def __init__(self, root: str):
+        self.root = root
+        self.state = torch.load(self.root + '/autoencoder_data.pt')
+
+    def __len__(self) -> int:
+        return len(self.state)
+
+    def __getitem__(self, idx: int) -> dict:
+        return self.state[idx]
 
 
 class DataSaver(object):
