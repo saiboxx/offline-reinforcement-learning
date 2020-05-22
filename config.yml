@@ -2,10 +2,10 @@
 # SET GENERAL PARAMETERS
 ###############################################################################
 ATARI_ENV: PongDeterministic-v4
-RENDER: False
+RENDER: True
 STEPS: 2000000
 VERBOSE_STEPS: 10000
-WARM_UP_STEPS: 50000
+WARM_UP_STEPS: 5
 SUMMARY_PATH: logs
 
 ###############################################################################

@@ -4,6 +4,10 @@ import numpy as np
 import gym
 from tqdm import tqdm
 import random
+import torch
+from torch import tensor
+from src.atari.utils.networks import ConvEncoder
+from src.atari.utils.preprocess import preprocess_state
 from src.atari.agents import RandomAgent, DQNAgent, DoubleDQNAgent
 from src.atari.utils.data import DataSaver, Summary
 
@@ -21,7 +25,7 @@ def run(cfg: dict):
     observation_space = env.observation_space.shape
     action_space = 3
     action_map = {0: 0, 1: 2, 2: 3}
-    state = np.zeros(observation_space)
+    state = state_mu = state_var = torch.zeros((1, 16))
 
     print('Creating Agent.')
     agent = DQNAgent(observation_space, action_space)
@@ -30,13 +34,27 @@ def run(cfg: dict):
     agent.print_model()
     agent.add_summary_writer(summary)
 
+    print('Initializing Encoder.')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    encoder = ConvEncoder()
+    encoder.load_state_dict(torch.load(cfg['AUTO_SAVE_PATH'] + '/encoder.pt',
+                                       map_location=device))
+    encoder.to(device)
+    encoder.eval()
+
+
     print('Starting warm up.')
     for _ in tqdm(range(cfg['WARM_UP_STEPS'])):
-        action = np.asarray(random.randint(0, action_space - 1))
+        action = tensor(random.randint(0, action_space - 1))
         if cfg['RENDER']:
             env.render()
         new_state, reward, done, info = env.step(action_map[int(action)])
+
+        reward = tensor(reward)
+        new_state = preprocess_state(new_state).to(device)
+        new_state, new_state_mu, new_state_var = encoder.encode(new_state)
         agent.add_experience(state, action, reward, done, new_state)
+        state = new_state
         if done:
             env.reset()
 
@@ -55,9 +73,13 @@ def run(cfg: dict):
             env.render()
         new_state, reward, done, info = env.step(action_map[int(action)])
 
+        reward = tensor(reward)
+        new_state = preprocess_state(new_state).to(device)
+        new_state, new_state_mu, new_state_var = encoder.encode(new_state)
+
         agent.add_experience(state, action, reward, done, new_state)
         agent.learn()
-        #saver.save(state, action, reward, done)
+        #saver.save(state_mu, state_var, action, reward, done)
 
         mean_step_reward.append(reward)
         reward_cur_episode.append(reward)
@@ -83,6 +105,9 @@ def run(cfg: dict):
             summary.writer.flush()
 
         state = new_state
+        state_mu = new_state_mu
+        state_var = new_state_var
+
         summary.adv_step()
 
     print('Closing environment.')

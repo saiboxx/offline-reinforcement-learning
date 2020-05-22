@@ -118,16 +118,6 @@ def run(cfg: dict):
     print('Saved trained models.')
 
 
-def preprocess_state(img: np.ndarray) -> tensor:
-    img = img[35:190, 2:158]
-    img[img == 144] = 0
-    img[img == 109] = 0
-    img[img == 72] = 0
-    img[img != 0] = 255
-    transform = Compose([ToPILImage(), Grayscale(), Resize(80), ToTensor()])
-    return transform(img)
-
-
 def get_kl_weight(epoch: int) -> float:
     min_epoch = 3
     max_epoch = 15

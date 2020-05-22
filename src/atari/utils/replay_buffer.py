@@ -1,5 +1,7 @@
 import random
 import numpy as np
+from typing import Tuple
+from torch import tensor
 from operator import itemgetter
 
 
@@ -14,7 +16,7 @@ class ReplayBuffer(object):
         self.dones = []
         self.new_states = []
 
-    def sample(self) -> tuple:
+    def sample(self) -> Tuple:
         if self.cur_buffer_size <= self.batch_size:
             sample_states = self.states
             sample_actions = self.actions
@@ -31,11 +33,11 @@ class ReplayBuffer(object):
 
         return sample_states, sample_actions, sample_rewards, sample_dones, sample_new_states
 
-    def add(self, state: np.ndarray,
-            action: np.ndarray,
-            reward: np.ndarray,
+    def add(self, state: tensor,
+            action: tensor,
+            reward: tensor,
             done: bool,
-            new_state: np.ndarray):
+            new_state: tensor):
 
         if self.cur_buffer_size >= self.max_buffer_size:
             del self.states[0]

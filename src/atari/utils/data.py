@@ -6,6 +6,7 @@ from PIL import Image
 from tqdm import tqdm
 from datetime import datetime
 import torch
+from torch import tensor
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import Dataset
 from torchvision.transforms import Compose, ToTensor
@@ -124,6 +125,46 @@ class VAEDataset(Dataset):
 
 
 class DataSaver(object):
+    def __init__(self, directory: str):
+        self.directory = directory
+        self.init_dirs()
+        self.states_mu = []
+        self.states_var = []
+        self.actions = []
+        self.rewards = []
+        self.dones = []
+
+    def init_dirs(self):
+        os.makedirs(self.directory, exist_ok=True)
+
+    def save(self,
+             state_mu: tensor,
+             state_var: tensor,
+             action: tensor,
+             reward: np.ndarray,
+             done: np.ndarray):
+
+        self.states.append(np.expand_dims(state, axis=0))
+        self.actions.append(action)
+        self.rewards.append(reward)
+        self.dones.append(done)
+
+    def close(self):
+        states = np.vstack(self.states)
+        actions = np.array(self.actions)
+        rewards = np.array(self.rewards)
+        dones = np.array(self.dones)
+        with open(self.directory + '/state.pkl', 'wb') as output:
+            pickle.dump(states, output)
+        with open(self.directory + '/action.pkl', 'wb') as output:
+            pickle.dump(actions, output)
+        with open(self.directory + '/reward.pkl', 'wb') as output:
+            pickle.dump(rewards, output)
+        with open(self.directory + '/done.pkl', 'wb') as output:
+            pickle.dump(dones, output)
+
+
+class ImgDataSaver(object):
     def __init__(self, directory: str):
         self.directory = directory
         self.init_dirs()

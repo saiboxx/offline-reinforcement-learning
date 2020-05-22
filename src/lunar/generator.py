@@ -36,6 +36,7 @@ def run(cfg: dict):
             env.render()
         new_state, reward, done, info = env.step(int(action))
         agent.add_experience(state, action, reward, done, new_state)
+        state = new_state
         if done:
             env.reset()
 

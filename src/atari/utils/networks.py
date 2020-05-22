@@ -1,9 +1,11 @@
+from typing import Tuple
 import torch
 from torch import nn
+from torch import tensor
 
 
 class DQNCNN(nn.Module):
-    def __init__(self, observation_space, action_space):
+    def __init__(self, observation_space: Tuple, action_space: int):
         super(DQNCNN, self).__init__()
         input_channel = observation_space[0]
         input_height = observation_space[1]
@@ -39,7 +41,7 @@ class DQNCNN(nn.Module):
 
         self.relu = nn.ReLU()
 
-    def forward(self, x):
+    def forward(self, x: tensor) -> tensor:
         x = self.conv1(x)
         x = self.relu(x)
         x = self.conv2(x)
@@ -53,7 +55,7 @@ class DQNCNN(nn.Module):
 
 
 class DQNCNNLight(nn.Module):
-    def __init__(self, observation_space, action_space):
+    def __init__(self, observation_space: Tuple, action_space: int):
         super(DQNCNNLight, self).__init__()
         input_channel = observation_space[0]
         input_height = observation_space[1]
@@ -89,7 +91,7 @@ class DQNCNNLight(nn.Module):
 
         self.relu = nn.ReLU()
 
-    def forward(self, x):
+    def forward(self, x: tensor) -> tensor:
         x = self.conv1(x)
         x = self.relu(x)
         x = self.conv2(x)
@@ -103,7 +105,7 @@ class DQNCNNLight(nn.Module):
 
 
 class DQNDense(nn.Module):
-    def __init__(self, observation_space, action_space):
+    def __init__(self, observation_space: int, action_space: int):
         super(DQNDense, self).__init__()
         self.fc1 = nn.Linear(in_features=observation_space, out_features=128)
         self.bn1 = nn.BatchNorm1d(128)
@@ -113,7 +115,7 @@ class DQNDense(nn.Module):
 
         self.elu = nn.ELU()
 
-    def forward(self, x):
+    def forward(self, x: tensor) -> tensor:
         x = self.fc1(x)
         x = self.bn1(x)
         x = self.elu(x)
@@ -150,7 +152,7 @@ class ConvEncoder(nn.Module):
 
         self.relu = nn.ReLU()
 
-    def forward(self, x):
+    def forward(self, x: tensor) -> Tuple[tensor, tensor]:
         x = self.conv1(x)
         x = self.relu(x)
         x = self.conv2(x)
@@ -162,6 +164,14 @@ class ConvEncoder(nn.Module):
         mu = self.mu(x)
         logvar = self.logvar(x)
         return mu, logvar
+
+    def encode(self, x: tensor) -> Tuple[tensor, tensor, tensor]:
+        with torch.no_grad():
+            mu, logvar = self.forward(x.unsqueeze(0))
+            std = torch.exp(0.5 * logvar)
+            eps = torch.randn_like(std)
+            new_x = mu + eps * std
+        return new_x, mu, logvar
 
 
 class ConvDecoder(nn.Module):
@@ -190,7 +200,7 @@ class ConvDecoder(nn.Module):
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, x):
+    def forward(self, x: tensor) -> tensor:
         x = self.fc1(x)
         x = self.relu(x)
         x = self.fc2(x)
@@ -211,7 +221,7 @@ class VAE(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, x):
+    def forward(self, x: tensor) -> Tuple[tensor, tensor, tensor]:
         mu, logvar = self.encoder(x)
 
         std = torch.exp(0.5 * logvar)
@@ -231,7 +241,7 @@ class Encoder(nn.Module):
 
         self.elu = nn.ELU()
 
-    def forward(self, x):
+    def forward(self, x: tensor) -> Tuple[tensor, tensor]:
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
         x = self.elu(x)
@@ -240,6 +250,14 @@ class Encoder(nn.Module):
         mu = self.mu(x)
         logvar = self.logvar(x)
         return mu, logvar
+    
+    def encode(self, x: tensor) -> Tuple[tensor, tensor, tensor]:
+        with torch.no_grad():
+            mu, logvar = self.forward(x.unsqueeze(0))
+            std = torch.exp(0.5 * logvar)
+            eps = torch.randn_like(std)
+            new_x = mu + eps * std
+        return new_x, mu, logvar
 
 
 class Decoder(nn.Module):
@@ -252,7 +270,7 @@ class Decoder(nn.Module):
         self.elu = nn.ELU()
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, x):
+    def forward(self, x: tensor) -> tensor:
         x = self.fc1(x)
         x = self.elu(x)
         x = self.fc2(x)
@@ -270,7 +288,7 @@ class AE(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, x):
+    def forward(self, x: tensor) -> Tuple[tensor, tensor, tensor]:
         mu, logvar = self.encoder(x)
         x = self.decoder(mu)
         return x, mu, logvar
