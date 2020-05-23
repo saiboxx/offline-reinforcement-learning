@@ -79,7 +79,7 @@ def run(cfg: dict):
 
         agent.add_experience(state, action, reward, done, new_state)
         agent.learn()
-        #saver.save(state_mu, state_var, action, reward, done)
+        saver.save(state_mu, state_var, action, reward, done)
 
         mean_step_reward.append(reward)
         reward_cur_episode.append(reward)

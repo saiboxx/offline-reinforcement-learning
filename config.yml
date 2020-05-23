@@ -3,9 +3,9 @@
 ###############################################################################
 ATARI_ENV: PongDeterministic-v4
 RENDER: True
-STEPS: 2000000
-VERBOSE_STEPS: 10000
-WARM_UP_STEPS: 5
+STEPS: 250000
+VERBOSE_STEPS: 1000
+WARM_UP_STEPS: 50000
 SUMMARY_PATH: logs
 
 ###############################################################################
@@ -17,11 +17,11 @@ GEN_DATA_PATH: data
 ###############################################################################
 # SET OFFLINE TRAINING PARAMETERS
 ###############################################################################
-TRAIN_DATA_PATH: data/DQN_500k
-EPOCHS: 125
+TRAIN_DATA_PATH: data
+EPOCHS: 10
 BATCH_SIZE: 128
-EVAL_EPISODES: 10
-EVAL_RENDER: False
+EVAL_EPISODES: 2
+EVAL_RENDER: True
 
 
 ###############################################################################
