@@ -7,7 +7,7 @@ from torch import tensor
 from torch.optim import Adam
 from torch.nn import SmoothL1Loss
 import torchsummary
-from src.atari.utils.networks import DQNCNN, DQNCNNLight, DQNDense
+from src.atari.utils.networks import DQNCNN, DQNCNNLight, DQNDense, DQNLSTM
 from src.atari.utils.replay_buffer import ReplayBuffer
 from src.atari.utils.data import Summary
 from torchvision.transforms import Compose, ToPILImage, Grayscale, Resize, ToTensor
@@ -60,15 +60,15 @@ class DQNAgent(Agent):
     def __init__(self, observation_space: int, action_space: int):
         super().__init__(observation_space, action_space)
         self.name = 'DQNAgent'
-        self.summary_checkpoint = 100
+        self.summary_checkpoint = 1000
 
-        self.target_update_steps = 5000
-        self.input_size = 16
+        self.target_update_steps = 500
+        self.input_size = 64
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('Utilizing device {}'.format(self.device))
-        self.policy = DQNDense(self.input_size, action_space).to(self.device)
-        self.target = DQNDense(self.input_size, action_space).to(self.device)
+        self.policy = DQNLSTM(self.input_size, action_space).to(self.device)
+        self.target = DQNLSTM(self.input_size, action_space).to(self.device)
         self.target.load_state_dict(self.target.state_dict())
         self.target.eval()
         self.optimizer = Adam(self.policy.parameters(), lr=0.00025)
@@ -79,7 +79,7 @@ class DQNAgent(Agent):
         self.steps_done = 0
         self.eps_start = 0.99
         self.eps_end = 0.05
-        self.eps_decay = (self.eps_start - self.eps_end) / 100000
+        self.eps_decay = (self.eps_start - self.eps_end) / 200000
         self.eps_threshold = self.eps_start
 
     def act(self, state: tensor) -> tensor:
@@ -118,7 +118,7 @@ class DQNAgent(Agent):
         next_state_values[done] = 0
 
         # Get expected Q values
-        expected_state_action_values = (next_state_values * 0.999) + reward
+        expected_state_action_values = (next_state_values * 0.99) + reward
 
         # Compute loss
         loss = self.loss(state_action_values, expected_state_action_values.unsqueeze(-1))
@@ -143,7 +143,8 @@ class DQNAgent(Agent):
         self.steps_done += 1
 
     def print_model(self):
-        torchsummary.summary(self.policy, input_size=(self.input_size,))
+        #torchsummary.summary(self.policy, input_size=(self.input_size,))
+        pass
 
     def save(self):
         directory = os.path.join('models',
@@ -157,28 +158,31 @@ class DoubleDQNAgent(DQNAgent):
     def __init__(self, observation_space: int, action_space: int):
         super().__init__(observation_space, action_space)
         self.name = 'DoubleDQNAgent'
+        self.tau = 0.01
 
     def learn(self):
+        self.policy.train()
         state, action, reward, done, new_state = self.replay_buffer.sample()
 
-        state = torch.stack(state).float().to(self.device)
-        action = torch.tensor(action).to(self.device)
-        reward = torch.tensor(reward).float().to(self.device)
+        state = torch.cat(state).to(self.device)
+        action = torch.stack(action).to(self.device)
+        reward = torch.stack(reward).to(self.device)
         done = torch.tensor(done).bool().to(self.device)
-        new_state = torch.stack(new_state).float().to(self.device)
+        new_state = torch.cat(new_state).to(self.device)
 
         # Get Q(s,a) for actions taken
         state_action_values = self.policy(state).gather(1, action)
 
-        # Get action for next state from greedy policy
-        new_action = torch.argmax(self.policy(new_state).detach(), dim=1)
+        with torch.no_grad():
+            # Get action for next state from greedy policy
+            new_action = torch.argmax(self.policy(new_state), dim=1)
 
-        # Get V(s') for the new states w/ action decided by policy w/ mask for final state
-        next_state_values = self.target(new_state).detach().gather(1, new_action.unsqueeze(1))
-        next_state_values[done] = 0
+            # Get V(s') for the new states w/ action decided by policy w/ mask for final state
+            next_state_values = self.target(new_state).gather(1, new_action.unsqueeze(1))
+            next_state_values[done] = 0
 
         # Get expected Q values
-        expected_state_action_values = (next_state_values.squeeze() * 0.999) + reward
+        expected_state_action_values = (next_state_values.squeeze() * 0.99) + reward
 
         # Compute loss
         loss = self.loss(state_action_values, expected_state_action_values.unsqueeze(-1))

@@ -73,7 +73,7 @@ class DataSaver(object):
              state_mu: tensor,
              state_var: tensor,
              action: tensor,
-             reward: np.ndarray,
+             reward: tensor,
              done: np.ndarray):
 
         self.states_mu.append(state_mu)
@@ -83,8 +83,8 @@ class DataSaver(object):
         self.dones.append(done)
 
     def close(self):
-        states_mu = torch.cat(self.states_mu)
-        states_var = torch.cat(self.states_var)
+        states_mu = torch.stack(self.states_mu)
+        states_var = torch.stack(self.states_var)
         actions = torch.stack(self.actions)
         rewards = torch.stack(self.rewards)
         dones = torch.tensor(self.dones).bool()

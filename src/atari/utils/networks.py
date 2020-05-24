@@ -107,15 +107,41 @@ class DQNCNNLight(nn.Module):
 class DQNDense(nn.Module):
     def __init__(self, observation_space: int, action_space: int):
         super(DQNDense, self).__init__()
-        self.fc1 = nn.Linear(in_features=observation_space, out_features=128)
-        self.bn1 = nn.BatchNorm1d(128)
-        self.fc2 = nn.Linear(in_features=128, out_features=32)
-        self.bn2 = nn.BatchNorm1d(32)
-        self.fc3 = nn.Linear(in_features=32, out_features=action_space)
+        self.fc1 = nn.Linear(in_features=observation_space, out_features=256)
+        self.bn1 = nn.BatchNorm1d(256)
+        self.fc2 = nn.Linear(in_features=256, out_features=64)
+        self.bn2 = nn.BatchNorm1d(64)
+        self.fc3 = nn.Linear(in_features=64, out_features=action_space)
 
         self.elu = nn.ELU()
 
     def forward(self, x: tensor) -> tensor:
+        x = self.fc1(x)
+        x = self.bn1(x)
+        x = self.elu(x)
+        x = self.fc2(x)
+        x = self.bn2(x)
+        x = self.elu(x)
+        x = self.fc3(x)
+        return x
+
+
+class DQNLSTM(nn.Module):
+    def __init__(self, observation_space: int, action_space: int):
+        super(DQNLSTM, self).__init__()
+        self.lstm = nn.LSTM(input_size=16, hidden_size=32, batch_first=True)
+        self.fc1 = nn.Linear(in_features=32, out_features=256)
+        self.bn1 = nn.BatchNorm1d(256)
+        self.fc2 = nn.Linear(in_features=256, out_features=64)
+        self.bn2 = nn.BatchNorm1d(64)
+        self.fc3 = nn.Linear(in_features=64, out_features=action_space)
+
+        self.elu = nn.ELU()
+
+    def forward(self, x: tensor) -> tensor:
+        x = x.view(-1, 4, 16)
+        x, _ = self.lstm(x)
+        x = x[:, -1, :]
         x = self.fc1(x)
         x = self.bn1(x)
         x = self.elu(x)
@@ -167,7 +193,7 @@ class ConvEncoder(nn.Module):
 
     def encode(self, x: tensor) -> Tuple[tensor, tensor, tensor]:
         with torch.no_grad():
-            mu, logvar = self.forward(x.unsqueeze(0))
+            mu, logvar = self.forward(x)
             std = torch.exp(0.5 * logvar)
             eps = torch.randn_like(std)
             new_x = mu + eps * std
