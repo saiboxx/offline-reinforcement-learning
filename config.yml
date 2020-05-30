@@ -2,10 +2,10 @@
 # SET GENERAL PARAMETERS
 ###############################################################################
 ATARI_ENV: PongDeterministic-v4
-RENDER: True
+RENDER: False
 STEPS: 1000000
 VERBOSE_STEPS: 1000
-WARM_UP_STEPS: 25000
+WARM_UP_STEPS: 50000
 SUMMARY_PATH: logs
 
 ###############################################################################
@@ -17,18 +17,18 @@ GEN_DATA_PATH: data
 ###############################################################################
 # SET OFFLINE TRAINING PARAMETERS
 ###############################################################################
-TRAIN_DATA_PATH: data
-EPOCHS: 100
-BATCH_SIZE: 32
-EVAL_EPISODES: 2
-EVAL_RENDER: True
+TRAIN_DATA_PATH: data/DQN_1m
+EPOCHS: 200
+BATCH_SIZE: 512
+EVAL_EPISODES: 10
+EVAL_RENDER: False
 
 
 ###############################################################################
 # SET AUTOENCODER PARAMETERS
 ###############################################################################
-AUTO_GENERATE: False
+AUTO_GENERATE: True
 AUTO_SAVE_PATH: autoencoder
-AUTO_EPOCHS: 100
+AUTO_EPOCHS: 250
 AUTO_BATCH_SIZE: 128
 

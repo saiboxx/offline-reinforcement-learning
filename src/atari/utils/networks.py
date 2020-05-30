@@ -129,12 +129,14 @@ class DQNDense(nn.Module):
 class DQNLSTM(nn.Module):
     def __init__(self, observation_space: int, action_space: int):
         super(DQNLSTM, self).__init__()
-        self.lstm = nn.LSTM(input_size=16, hidden_size=32, batch_first=True)
-        self.fc1 = nn.Linear(in_features=32, out_features=256)
-        self.bn1 = nn.BatchNorm1d(256)
-        self.fc2 = nn.Linear(in_features=256, out_features=64)
-        self.bn2 = nn.BatchNorm1d(64)
-        self.fc3 = nn.Linear(in_features=64, out_features=action_space)
+        self.lstm = nn.LSTM(input_size=16, hidden_size=64, batch_first=True)
+        self.fc1 = nn.Linear(in_features=64, out_features=512)
+        self.bn1 = nn.BatchNorm1d(512)
+        self.fc2 = nn.Linear(in_features=512, out_features=256)
+        self.bn2 = nn.BatchNorm1d(256)
+        self.fc3 = nn.Linear(in_features=256, out_features=64)
+        self.bn3 = nn.BatchNorm1d(64)
+        self.fc4 = nn.Linear(in_features=64, out_features=action_space)
 
         self.elu = nn.ELU()
 
@@ -149,6 +151,9 @@ class DQNLSTM(nn.Module):
         x = self.bn2(x)
         x = self.elu(x)
         x = self.fc3(x)
+        x = self.bn3(x)
+        x = self.elu(x)
+        x = self.fc4(x)
         return x
 
 

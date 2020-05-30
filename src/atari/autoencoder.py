@@ -15,6 +15,8 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToPILImage, Grayscale, Resize, ToTensor
 from src.atari.utils.networks import VAE, AE, ConvEncoder, ConvDecoder, Encoder, Decoder
 from src.atari.utils.data import VAEDataset
+from src.atari.utils.preprocess import preprocess_state
+from src.atari.utils.env_wrapper import NoopResetEnv, MaxAndSkipEnv
 
 
 def main():
@@ -30,12 +32,14 @@ def main():
 def generate(cfg: dict):
     print('Loading environment {}.'.format(cfg['ATARI_ENV']))
     env = gym.make(cfg['ATARI_ENV'])
+    env = NoopResetEnv(env, noop_max=30)
+    env = MaxAndSkipEnv(env, skip=4)
     env.reset()
     action_space = 3
     action_map = {0: 0, 1: 2, 2: 3}
     state_batch = []
 
-    for _ in tqdm(range(150000)):
+    for _ in tqdm(range(250000)):
         action = np.asarray(random.randint(0, action_space - 1))
         new_state, _, done, _ = env.step(action_map[int(action)])
         state = preprocess_state(new_state)

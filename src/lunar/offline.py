@@ -35,7 +35,7 @@ def train(cfg: dict):
     data_loader = DataLoader(dataset=training_data,
                              batch_size=cfg['BATCH_SIZE'],
                              shuffle=True,
-                             num_workers=4,
+                             num_workers=8,
                              pin_memory=True)
 
     print('Start training with {} epochs'.format(cfg['EPOCHS']))

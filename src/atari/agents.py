@@ -62,7 +62,7 @@ class DQNAgent(Agent):
         self.name = 'DQNAgent'
         self.summary_checkpoint = 1000
 
-        self.target_update_steps = 500
+        self.target_update_steps = 2500
         self.input_size = 64
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -90,7 +90,7 @@ class DQNAgent(Agent):
                 self.policy.eval()
                 return torch.argmax(self.policy(state.to(self.device)))
         else:
-            return tensor(random.randint(0, self.action_space - 1))
+            return tensor(random.randint(0, self.action_space - 1)).to(self.device)
 
     def add_experience(self,
                        state: tensor,

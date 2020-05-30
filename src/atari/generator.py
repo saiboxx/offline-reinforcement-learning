@@ -26,11 +26,9 @@ def run(cfg: dict):
     observation_space = env.observation_space.shape
     action_space = 3
     action_map = {0: 0, 1: 2, 2: 3}
-    state = torch.zeros((1, 64))
-    state_mu = state_var = torch.zeros((4, 16))
 
     print('Creating Agent.')
-    agent = DoubleDQNAgent(observation_space, action_space)
+    agent = DQNAgent(observation_space, action_space)
     saver = DataSaver(cfg['GEN_DATA_PATH'])
     summary = Summary(cfg['SUMMARY_PATH'], agent.name)
     agent.print_model()
@@ -44,9 +42,12 @@ def run(cfg: dict):
     encoder.to(device)
     encoder.eval()
 
+    state = torch.zeros((1, 64)).to(device)
+    state_mu = state_var = torch.zeros((4, 16)).to(device)
+
     print('Starting warm up.')
     for _ in tqdm(range(cfg['WARM_UP_STEPS'])):
-        action = tensor(random.randint(0, action_space - 1))
+        action = tensor(random.randint(0, action_space - 1)).to(device)
         if cfg['RENDER']:
             env.render()
         new_state, reward, done, info = env.step(action_map[int(action)])
@@ -81,8 +82,10 @@ def run(cfg: dict):
         new_state = new_state.flatten().unsqueeze(0)
 
         agent.add_experience(state, action, reward, done, new_state)
+
+        #if steps % 4 == 0:
         agent.learn()
-        saver.save(state_mu[3, :], state_var[3, :], action, reward, done)
+        #saver.save(state_mu[3, :], state_var[3, :], action, reward, done)
 
         mean_step_reward.append(reward)
         reward_cur_episode.append(reward)
