@@ -5,7 +5,7 @@ ATARI_ENV: PongDeterministic-v4
 RENDER: False
 STEPS: 1000000
 VERBOSE_STEPS: 1000
-WARM_UP_STEPS: 50000
+WARM_UP_STEPS: 1
 SUMMARY_PATH: logs
 
 ###############################################################################

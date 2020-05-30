@@ -4,7 +4,7 @@ import numpy as np
 import gym
 from tqdm import tqdm
 import random
-from src.lunar.agents import RandomAgent, DQNAgent, DoubleDQNAgent
+from src.lunar.agents import RandomAgent, DQNAgent
 from src.lunar.utils.data import DataSaver, Summary
 
 
@@ -23,7 +23,7 @@ def run(cfg: dict):
     state = np.zeros(observation_space)
 
     print('Creating Agent.')
-    agent = DQNAgent(observation_space, action_space)
+    agent = RandomAgent(observation_space, action_space)
     saver = DataSaver(cfg['GEN_DATA_PATH'])
     summary = Summary(cfg['SUMMARY_PATH'], agent.name)
     agent.print_model()

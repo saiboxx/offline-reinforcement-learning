@@ -5,10 +5,9 @@ import torch
 from torch.optim import Adam
 from torch.nn import SmoothL1Loss
 import torchsummary
-from src.lunar.utils.networks import DQNDense
+from src.lunar.utils.networks import DQNDense, DQNMultiHead
 from src.lunar.utils.replay_buffer import ReplayBuffer
 from src.lunar.utils.data import Summary
-from torchvision.transforms import Compose, ToPILImage, Grayscale, Resize, ToTensor
 
 
 class Agent(object):
@@ -232,3 +231,140 @@ class OfflineDQNAgent(Agent):
                                  str(epoch) + '.pt')
         os.makedirs('models/' + self.name, exist_ok=True)
         torch.save(self.target, directory)
+
+
+class EnsembleOffDQNAgent(Agent):
+    def __init__(self, observation_space: int, action_space: int):
+        super().__init__(observation_space, action_space)
+        self.name = 'EnsembleOffDQNAgent'
+        self.summary_checkpoint = 1000
+        self.batches_done = 0
+
+        self.target_update_steps = 2500
+        self.num_heads = 64
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print('Utilizing device {}'.format(self.device))
+        self.policy = DQNMultiHead(observation_space, action_space, self.num_heads).to(self.device)
+        self.target = DQNMultiHead(observation_space, action_space, self.num_heads).to(self.device)
+        self.target.load_state_dict(self.target.state_dict())
+        self.target.eval()
+        self.optimizer = Adam(self.policy.parameters(), lr=0.0005)
+        self.loss = SmoothL1Loss()
+
+    def act(self, state: np.ndarray) -> np.ndarray:
+        with torch.no_grad():
+            self.policy.eval()
+            state = torch.tensor(state).float().unsqueeze(0).to(self.device)
+            avg_q_values = torch.mean(self.policy(state), dim=0)
+            action = torch.argmax(avg_q_values)
+            return action.cpu().detach().numpy()
+
+    def learn(self, batch: dict):
+        self.policy.train()
+
+        state = batch['state'].to(self.device)
+        action = batch['action'].to(self.device)
+        reward = batch['reward'].to(self.device)
+        done = batch['done'].to(self.device)
+        new_state = batch['new_state'].to(self.device)
+
+        # Get Q(s,a) for actions taken
+        actions = action.unsqueeze(-1).expand(self.num_heads, -1, -1)
+        state_action_values = self.policy(state).gather(2, actions)
+
+        # Get V(s') for the new states w/ mask for final state
+        next_state_values, _ = torch.max(self.target(new_state).detach(), dim=2)
+        next_state_values[:, done] = 0
+
+        # Get expected Q values
+        expected_state_action_values = (next_state_values * 0.99) + reward
+
+        # Compute loss
+        loss = self.loss(state_action_values, expected_state_action_values.unsqueeze(-1))
+        loss = loss.mean()
+
+        # Optimize w/ Clipping
+        self.optimizer.zero_grad()
+        loss.backward()
+        for param in self.policy.parameters():
+            param.grad.data.clamp_(-1, 1)
+        self.optimizer.step()
+
+        # Update target every n steps
+        if self.batches_done % self.target_update_steps == 0:
+            self.target.load_state_dict(self.policy.state_dict())
+
+        # Log metrics
+        if self.summary_writer is not None \
+                and self.batches_done % self.summary_checkpoint == 0:
+            self.summary_writer.add_scalar('Loss', loss)
+            self.summary_writer.add_scalar('Expected Q Values', expected_state_action_values.mean())
+
+        self.batches_done += 1
+
+    def print_model(self):
+        torchsummary.summary(self.policy, input_size=(self.observation_space,))
+
+    def save(self, epoch: int):
+        directory = os.path.join('models',
+                                 self.name,
+                                 str(epoch) + '.pt')
+        os.makedirs('models/' + self.name, exist_ok=True)
+        torch.save(self.target, directory)
+
+
+class REMOffDQN(EnsembleOffDQNAgent):
+    def __init__(self, observation_space: int, action_space: int):
+        super().__init__(observation_space, action_space)
+        self.name = 'REMOffDQNAgent'
+
+    def learn(self, batch: dict):
+        self.policy.train()
+
+        state = batch['state'].to(self.device)
+        action = batch['action'].to(self.device)
+        reward = batch['reward'].to(self.device)
+        done = batch['done'].to(self.device)
+        new_state = batch['new_state'].to(self.device)
+
+        # Get random alpha values where sum(alphas) = 1
+        alpha = torch.rand(self.num_heads).to(self.device)
+        alpha = alpha / torch.sum(alpha)
+        alpha = alpha.unsqueeze(-1).expand(-1, len(action))
+
+        # Get Q(s,a) for actions taken and weigh
+        actions = action.unsqueeze(-1).expand(self.num_heads, -1, -1)
+        state_action_values = self.policy(state).gather(2, actions).squeeze()
+        state_action_values *= alpha
+
+
+        # Get V(s') for the new states w/ mask for final state
+        next_state_values, _ = torch.max(self.target(new_state).detach(), dim=2)
+        next_state_values[:, done] = 0
+
+        # Get expected Q values
+        expected_state_action_values = (alpha * next_state_values * 0.99) + reward
+
+        # Compute loss
+        loss = self.loss(state_action_values, expected_state_action_values)
+        loss = loss.sum()
+
+        # Optimize w/ Clipping
+        self.optimizer.zero_grad()
+        loss.backward()
+        for param in self.policy.parameters():
+            param.grad.data.clamp_(-1, 1)
+        self.optimizer.step()
+
+        # Update target every n steps
+        if self.batches_done % self.target_update_steps == 0:
+            self.target.load_state_dict(self.policy.state_dict())
+
+        # Log metrics
+        if self.summary_writer is not None \
+                and self.batches_done % self.summary_checkpoint == 0:
+            self.summary_writer.add_scalar('Loss', loss)
+            self.summary_writer.add_scalar('Expected Q Values', expected_state_action_values.mean())
+
+        self.batches_done += 1

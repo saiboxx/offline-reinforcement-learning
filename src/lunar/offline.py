@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from src.lunar.utils.data import EnvDataset, Summary
-from src.lunar.agents import OfflineDQNAgent
+from src.lunar.agents import OfflineDQNAgent, EnsembleOffDQNAgent, REMOffDQN
 
 
 def main():
@@ -23,7 +23,7 @@ def train(cfg: dict):
     state = np.zeros(observation_space)
 
     print('Creating Agent.')
-    agent = OfflineDQNAgent(observation_space, action_space)
+    agent = REMOffDQN(observation_space, action_space)
     summary = Summary(cfg['SUMMARY_PATH'], agent.name)
     agent.print_model()
     agent.add_summary_writer(summary)
@@ -61,7 +61,7 @@ def train(cfg: dict):
                 counter += 1
 
         agent.save(e)
-        summary.add_scalar('Episode Mean Reward', np.mean(mean_reward))
+        summary.add_scalar('Episode Mean Reward', np.mean(mean_reward), True)
         summary.adv_episode()
         summary.writer.flush()
 
