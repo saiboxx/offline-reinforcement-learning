@@ -17,11 +17,18 @@ GEN_DATA_PATH: data
 ###############################################################################
 # SET OFFLINE TRAINING PARAMETERS
 ###############################################################################
+AGENT: REM
 TRAIN_DATA_PATH: data/DQN_1m
 EPOCHS: 200
 BATCH_SIZE: 512
 EVAL_EPISODES: 10
 EVAL_RENDER: False
+
+LEARNING_RATE: 0.0005
+GAMMA: 0.99
+NUM_HEADS: 64
+TARGET_UPDATE_INTERVAL: 2500
+SUMMARY_CHECKPOINT: 1000
 
 
 ###############################################################################

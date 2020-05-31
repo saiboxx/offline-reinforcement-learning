@@ -1,11 +1,11 @@
 import gym
 import yaml
-from tqdm import tqdm
 import numpy as np
+from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 from src.lunar.utils.data import EnvDataset, Summary
-from src.lunar.agents import OfflineDQNAgent, EnsembleOffDQNAgent, REMOffDQN
+from src.lunar.agents import Agent, OfflineDQNAgent, EnsembleOffDQNAgent, REMOffDQN
 
 
 def main():
@@ -23,8 +23,8 @@ def train(cfg: dict):
     state = np.zeros(observation_space)
 
     print('Creating Agent.')
-    agent = REMOffDQN(observation_space, action_space)
-    summary = Summary(cfg['SUMMARY_PATH'], agent.name)
+    agent = create_agent(observation_space, action_space, cfg)
+    summary = Summary(cfg['SUMMARY_PATH'], agent.name, cfg)
     agent.print_model()
     agent.add_summary_writer(summary)
 
@@ -67,6 +67,18 @@ def train(cfg: dict):
 
     print('Closing environment.')
     env.close()
+
+
+def create_agent(observation_space: int, action_space: int, cfg: dict) -> Agent:
+    if cfg['AGENT'] == 'DQN':
+        return OfflineDQNAgent(observation_space, action_space, cfg)
+    elif cfg['AGENT'] == 'ENSEMBLE':
+        return EnsembleOffDQNAgent(observation_space, action_space, cfg)
+    elif cfg['AGENT'] == 'REM':
+        return REMOffDQN(observation_space, action_space, cfg)
+    else:
+        print('No valid agent with name {} found. Exiting...'.format(cfg['AGENT']))
+        exit()
 
 
 if __name__ == '__main__':

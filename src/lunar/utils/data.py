@@ -1,6 +1,7 @@
 import os
 import pickle
 import numpy as np
+from typing import Optional
 from datetime import datetime
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -79,13 +80,28 @@ class DataSaver(object):
 
 
 class Summary(object):
-    def __init__(self, directory: str, agent_name: str):
+    def __init__(self, directory: str, agent_name: str, cfg: Optional[dict]=None):
         self.directory = os.path.join(directory,
                                       agent_name,
                                       datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         self.writer = SummaryWriter(log_dir=self.directory)
         self.step = 1
         self.episode = 1
+
+        if cfg is not None:
+            params = {
+                'AGENT': cfg['AGENT'],
+                'TRAIN_DATA_PATH': cfg['TRAIN_DATA_PATH'],
+                'EPOCHS': int(cfg['EPOCHS']),
+                'BATCH_SIZE': int(cfg['BATCH_SIZE']),
+                'EVAL_EPISODES': int(cfg['EVAL_EPISODES']),
+                'LEARNING_RATE': cfg['LEARNING_RATE'],
+                'GAMMA': cfg['GAMMA'],
+                'NUM_HEADS': int(cfg['NUM_HEADS']),
+                'TARGET_UPDATE_INTERVAL': int(cfg['TARGET_UPDATE_INTERVAL']),
+                'SUMMARY_CHECKPOINT': int(cfg['SUMMARY_CHECKPOINT'])
+            }
+            self.writer.add_hparams(hparam_dict=params, metric_dict={})
 
     def add_scalar(self, tag: str, value, episode: bool = False):
         step = self.step

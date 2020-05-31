@@ -11,7 +11,7 @@ from src.lunar.utils.data import Summary
 
 
 class Agent(object):
-    def __init__(self, observation_space: int, action_space: int):
+    def __init__(self, observation_space: int, action_space: int, *args):
         self.observation_space = observation_space
         self.action_space = action_space
         self.name = None
@@ -157,13 +157,14 @@ class DQNAgent(Agent):
 
 
 class OfflineDQNAgent(Agent):
-    def __init__(self, observation_space: int, action_space: int):
+    def __init__(self, observation_space: int, action_space: int, cfg: dict):
         super().__init__(observation_space, action_space)
         self.name = 'OfflineDQNAgent'
-        self.summary_checkpoint = 1000
+        self.summary_checkpoint = cfg['SUMMARY_CHECKPOINT']
         self.batches_done = 0
 
-        self.target_update_steps = 2500
+        self.target_update_steps = cfg['TARGET_UPDATE_INTERVAL']
+        self.gamma = cfg['GAMMA']
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('Utilizing device {}'.format(self.device))
@@ -171,7 +172,7 @@ class OfflineDQNAgent(Agent):
         self.target = DQNDense(observation_space, action_space).to(self.device)
         self.target.load_state_dict(self.target.state_dict())
         self.target.eval()
-        self.optimizer = Adam(self.policy.parameters(), lr=0.0005)
+        self.optimizer = Adam(self.policy.parameters(), lr=cfg['LEARNING_RATE'])
         self.loss = SmoothL1Loss()
 
     def act(self, state: np.ndarray) -> np.ndarray:
@@ -198,7 +199,7 @@ class OfflineDQNAgent(Agent):
         next_state_values[done] = 0
 
         # Get expected Q values
-        expected_state_action_values = (next_state_values * 0.99) + reward
+        expected_state_action_values = (next_state_values * self.gamma) + reward
 
         # Compute loss
         loss = self.loss(state_action_values, expected_state_action_values.unsqueeze(-1))
@@ -234,14 +235,15 @@ class OfflineDQNAgent(Agent):
 
 
 class EnsembleOffDQNAgent(Agent):
-    def __init__(self, observation_space: int, action_space: int):
+    def __init__(self, observation_space: int, action_space: int, cfg: dict):
         super().__init__(observation_space, action_space)
         self.name = 'EnsembleOffDQNAgent'
-        self.summary_checkpoint = 1000
+        self.summary_checkpoint = cfg['SUMMARY_CHECKPOINT']
         self.batches_done = 0
 
-        self.target_update_steps = 2500
-        self.num_heads = 64
+        self.target_update_steps = cfg['TARGET_UPDATE_INTERVAL']
+        self.gamma = cfg['GAMMA']
+        self.num_heads = cfg['NUM_HEADS']
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('Utilizing device {}'.format(self.device))
@@ -249,7 +251,7 @@ class EnsembleOffDQNAgent(Agent):
         self.target = DQNMultiHead(observation_space, action_space, self.num_heads).to(self.device)
         self.target.load_state_dict(self.target.state_dict())
         self.target.eval()
-        self.optimizer = Adam(self.policy.parameters(), lr=0.0005)
+        self.optimizer = Adam(self.policy.parameters(), lr=cfg['LEARNING_RATE'])
         self.loss = SmoothL1Loss()
 
     def act(self, state: np.ndarray) -> np.ndarray:
@@ -278,7 +280,7 @@ class EnsembleOffDQNAgent(Agent):
         next_state_values[:, done] = 0
 
         # Get expected Q values
-        expected_state_action_values = (next_state_values * 0.99) + reward
+        expected_state_action_values = (next_state_values * self.gamma) + reward
 
         # Compute loss
         loss = self.loss(state_action_values, expected_state_action_values.unsqueeze(-1))
@@ -315,8 +317,8 @@ class EnsembleOffDQNAgent(Agent):
 
 
 class REMOffDQN(EnsembleOffDQNAgent):
-    def __init__(self, observation_space: int, action_space: int):
-        super().__init__(observation_space, action_space)
+    def __init__(self, observation_space: int, action_space: int, cfg: dict):
+        super().__init__(observation_space, action_space, cfg)
         self.name = 'REMOffDQNAgent'
 
     def learn(self, batch: dict):
@@ -344,7 +346,7 @@ class REMOffDQN(EnsembleOffDQNAgent):
         next_state_values[:, done] = 0
 
         # Get expected Q values
-        expected_state_action_values = (alpha * next_state_values * 0.99) + reward
+        expected_state_action_values = (alpha * next_state_values * self.gamma) + reward
 
         # Compute loss
         loss = self.loss(state_action_values, expected_state_action_values)
