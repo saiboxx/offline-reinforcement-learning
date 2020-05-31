@@ -5,7 +5,8 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 from src.lunar.utils.data import EnvDataset, Summary
-from src.lunar.agents import Agent, OfflineDQNAgent, EnsembleOffDQNAgent, REMOffDQN
+from src.lunar.agents import Agent, OfflineDQNAgent, \
+    EnsembleOffDQNAgent, REMOffDQNAgent, QROffDQNAgent
 
 
 def main():
@@ -75,7 +76,9 @@ def create_agent(observation_space: int, action_space: int, cfg: dict) -> Agent:
     elif cfg['AGENT'] == 'ENSEMBLE':
         return EnsembleOffDQNAgent(observation_space, action_space, cfg)
     elif cfg['AGENT'] == 'REM':
-        return REMOffDQN(observation_space, action_space, cfg)
+        return REMOffDQNAgent(observation_space, action_space, cfg)
+    elif cfg['AGENT'] == 'QR':
+        return QROffDQNAgent(observation_space, action_space, cfg)
     else:
         print('No valid agent with name {} found. Exiting...'.format(cfg['AGENT']))
         exit()

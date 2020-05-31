@@ -19,7 +19,7 @@ GEN_DATA_PATH: data
 ###############################################################################
 AGENT: REM
 TRAIN_DATA_PATH: data/DQN_1m
-EPOCHS: 200
+EPOCHS: 100
 BATCH_SIZE: 512
 EVAL_EPISODES: 10
 EVAL_RENDER: False
