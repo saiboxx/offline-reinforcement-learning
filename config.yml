@@ -17,7 +17,7 @@ GEN_DATA_PATH: data
 ###############################################################################
 # SET OFFLINE TRAINING PARAMETERS
 ###############################################################################
-AGENT: REM
+AGENT: LSPI
 TRAIN_DATA_PATH: data/DQN_1m
 EPOCHS: 100
 BATCH_SIZE: 512

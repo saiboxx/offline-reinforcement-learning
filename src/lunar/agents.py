@@ -6,6 +6,7 @@ from torch.optim import Adam
 from torch.nn import SmoothL1Loss
 import torchsummary
 from src.lunar.utils.networks import DQNDense, DQNMultiHead, QRDQNDense
+from src.lunar.utils.basis_functions import RadialBasisFunction
 from src.lunar.utils.replay_buffer import ReplayBuffer
 from src.lunar.utils.data import Summary
 
@@ -340,7 +341,6 @@ class REMOffDQNAgent(EnsembleOffDQNAgent):
         state_action_values = self.policy(state).gather(2, actions).squeeze()
         state_action_values *= alpha
 
-
         # Get V(s') for the new states w/ mask for final state
         next_state_values, _ = torch.max(self.target(new_state).detach(), dim=2)
         next_state_values[:, done] = 0
@@ -461,3 +461,70 @@ class QROffDQNAgent(Agent):
                                  str(epoch) + '.pt')
         os.makedirs('models/' + self.name, exist_ok=True)
         torch.save(self.target, directory)
+
+
+class OfflineLSPIAgent(Agent):
+    def __init__(self, observation_space: int, action_space: int, cfg: dict):
+        super().__init__(observation_space, action_space)
+        self.name = 'OfflineLSPIDQNAgent'
+        self.summary_checkpoint = cfg['SUMMARY_CHECKPOINT']
+        self.batches_done = 0
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print('Utilizing device {}'.format(self.device))
+
+        self.num_basis = 3
+        self.basis_function = RadialBasisFunction(5,
+                                                  self.num_basis,
+                                                  action_space,
+                                                  observation_space,
+                                                  self.device)
+        self.weights = (-1 - 1) * torch.rand(self.basis_function.size) + 1
+        self.weights.to(self.device)
+        self.gamma = cfg['GAMMA']
+
+    def act(self, state: np.ndarray) -> np.ndarray:
+        with torch.no_grad():
+            q_values = torch.stack([torch.matmul(self.weights, self.basis_function.evaluate(state, a))
+                                    for a in range(self.action_space)])
+            return torch.argmax(q_values).cpu().detach().numpy()
+
+    def learn(self, batch: dict):
+        state = batch['state'].to(self.device)
+        action = batch['action'].to(self.device)
+        reward = batch['reward'].to(self.device)
+        done = batch['done'].to(self.device)
+        new_state = batch['new_state'].to(self.device)
+
+        with torch.no_grad():
+
+            k = self.basis_function.size
+            a_mat = torch.zeros((k, k)).fill_diagonal_(0.1).to(self.device)
+            b_vec = torch.zeros((k, 1)).to(self.device)
+
+            for i in range(len(state)):
+                phi_sa = self.basis_function.evaluate(state[i], action[i])
+
+                if not done[i]:
+                    best_action = self.act(state[i])
+                    phi_sprime = self.basis_function.evaluate(new_state[i], best_action).unsqueeze(1)
+                else:
+                    phi_sprime = torch.zeros((k, 1)).to(self.device)
+
+                phi_subtraction = phi_sa.unsqueeze(1) - (self.gamma * phi_sprime)
+                a_mat += torch.matmul(phi_sa.unsqueeze(1), phi_subtraction.T)
+                b_vec += phi_sa.unsqueeze(1) * reward[i]
+
+            new_weights, _ = torch.solve(b_vec, a_mat)
+            new_weights = new_weights.squeeze()
+            
+            distance = torch.norm(new_weights - self.weights)
+            self.weights = new_weights
+        # Log metrics
+        if self.summary_writer is not None \
+                and self.batches_done % self.summary_checkpoint == 0:
+            pass
+            # self.summary_writer.add_scalar('Loss', loss)
+            # self.summary_writer.add_scalar('Expected Q Values', expected_state_action_values.mean())
+
+        self.batches_done += 1

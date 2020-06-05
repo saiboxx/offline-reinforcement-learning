@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import DataLoader
 from src.lunar.utils.data import EnvDataset, Summary
 from src.lunar.agents import Agent, OfflineDQNAgent, \
-    EnsembleOffDQNAgent, REMOffDQNAgent, QROffDQNAgent
+    EnsembleOffDQNAgent, REMOffDQNAgent, QROffDQNAgent, OfflineLSPIAgent
 
 
 def main():
@@ -41,7 +41,7 @@ def train(cfg: dict):
 
     print('Start training with {} epochs'.format(cfg['EPOCHS']))
     for e in range(1, cfg['EPOCHS'] + 1):
-        for i_batch, sample_batched in enumerate(tqdm(data_loader)):
+        for i_batch, sample_batched in enumerate(tqdm(data_loader, leave=False)):
             agent.learn(sample_batched)
 
             summary.adv_step()
@@ -66,6 +66,8 @@ def train(cfg: dict):
         summary.adv_episode()
         summary.writer.flush()
 
+        print('Ep. {0}; Episode Mean Reward {1:.2f}'.format(e, np.mean(mean_reward)))
+
     print('Closing environment.')
     env.close()
 
@@ -79,6 +81,8 @@ def create_agent(observation_space: int, action_space: int, cfg: dict) -> Agent:
         return REMOffDQNAgent(observation_space, action_space, cfg)
     elif cfg['AGENT'] == 'QR':
         return QROffDQNAgent(observation_space, action_space, cfg)
+    elif cfg['AGENT'] == 'LSPI':
+        return OfflineLSPIAgent(observation_space, action_space, cfg)
     else:
         print('No valid agent with name {} found. Exiting...'.format(cfg['AGENT']))
         exit()
