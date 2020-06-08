@@ -44,8 +44,7 @@ class RadialBasisFunction(object):
         self.action_space = action_space
         self.observation_space = observation_space
         self.k = k
-        self.means = (-1 - 1) * torch.rand(k, observation_space) + 1
-        self.means.to(device)
+        self.means = ((-1 - 1) * torch.rand(k, observation_space) + 1).to(device)
         self.gamma = gamma
         self.device = device
         self.size = (len(self.means) + 1) * self.action_space

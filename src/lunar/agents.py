@@ -467,8 +467,6 @@ class OfflineLSPIAgent(Agent):
     def __init__(self, observation_space: int, action_space: int, cfg: dict):
         super().__init__(observation_space, action_space)
         self.name = 'OfflineLSPIDQNAgent'
-        self.summary_checkpoint = cfg['SUMMARY_CHECKPOINT']
-        self.batches_done = 0
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('Utilizing device {}'.format(self.device))
@@ -479,12 +477,13 @@ class OfflineLSPIAgent(Agent):
                                                   action_space,
                                                   observation_space,
                                                   self.device)
-        self.weights = (-1 - 1) * torch.rand(self.basis_function.size) + 1
-        self.weights.to(self.device)
+        self.weights = ((-1 - 1) * torch.rand(self.basis_function.size) + 1).to(self.device)
         self.gamma = cfg['GAMMA']
 
     def act(self, state: np.ndarray) -> np.ndarray:
         with torch.no_grad():
+            if isinstance(state, np.ndarray):
+                state = torch.tensor(state).to(self.device)
             q_values = torch.stack([torch.matmul(self.weights, self.basis_function.evaluate(state, a))
                                     for a in range(self.action_space)])
             return torch.argmax(q_values).cpu().detach().numpy()
@@ -503,7 +502,7 @@ class OfflineLSPIAgent(Agent):
             b_vec = torch.zeros((k, 1)).to(self.device)
 
             for i in range(len(state)):
-                phi_sa = self.basis_function.evaluate(state[i], action[i])
+                phi_sa = self.basis_function.evaluate(state[i], action[i]).unsqueeze(1)
 
                 if not done[i]:
                     best_action = self.act(state[i])
@@ -511,20 +510,15 @@ class OfflineLSPIAgent(Agent):
                 else:
                     phi_sprime = torch.zeros((k, 1)).to(self.device)
 
-                phi_subtraction = phi_sa.unsqueeze(1) - (self.gamma * phi_sprime)
-                a_mat += torch.matmul(phi_sa.unsqueeze(1), phi_subtraction.T)
-                b_vec += phi_sa.unsqueeze(1) * reward[i]
+                phi_subtraction = phi_sa - (self.gamma * phi_sprime)
+                a_mat += torch.matmul(phi_sa, phi_subtraction.T)
+                b_vec += phi_sa * reward[i]
 
             new_weights, _ = torch.solve(b_vec, a_mat)
             new_weights = new_weights.squeeze()
             
             distance = torch.norm(new_weights - self.weights)
             self.weights = new_weights
-        # Log metrics
-        if self.summary_writer is not None \
-                and self.batches_done % self.summary_checkpoint == 0:
-            pass
-            # self.summary_writer.add_scalar('Loss', loss)
-            # self.summary_writer.add_scalar('Expected Q Values', expected_state_action_values.mean())
 
-        self.batches_done += 1
+            self.summary_writer.add_scalar('Distance', distance)
+
