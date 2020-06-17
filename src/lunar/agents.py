@@ -66,7 +66,7 @@ class DQNAgent(Agent):
         print('Utilizing device {}'.format(self.device))
         self.policy = DQNDense(observation_space, action_space).to(self.device)
         self.target = DQNDense(observation_space, action_space).to(self.device)
-        self.target.load_state_dict(self.target.state_dict())
+        self.target.load_state_dict(self.policy.state_dict())
         self.target.eval()
         self.optimizer = Adam(self.policy.parameters(), lr=0.0005)
         self.loss = SmoothL1Loss()
@@ -171,7 +171,7 @@ class OfflineDQNAgent(Agent):
         print('Utilizing device {}'.format(self.device))
         self.policy = DQNDense(observation_space, action_space).to(self.device)
         self.target = DQNDense(observation_space, action_space).to(self.device)
-        self.target.load_state_dict(self.target.state_dict())
+        self.target.load_state_dict(self.policy.state_dict())
         self.target.eval()
         self.optimizer = Adam(self.policy.parameters(), lr=cfg['LEARNING_RATE'])
         self.loss = SmoothL1Loss()
@@ -250,7 +250,7 @@ class EnsembleOffDQNAgent(Agent):
         print('Utilizing device {}'.format(self.device))
         self.policy = DQNMultiHead(observation_space, action_space, self.num_heads).to(self.device)
         self.target = DQNMultiHead(observation_space, action_space, self.num_heads).to(self.device)
-        self.target.load_state_dict(self.target.state_dict())
+        self.target.load_state_dict(self.policy.state_dict())
         self.target.eval()
         self.optimizer = Adam(self.policy.parameters(), lr=cfg['LEARNING_RATE'])
         self.loss = SmoothL1Loss()
@@ -339,18 +339,21 @@ class REMOffDQNAgent(EnsembleOffDQNAgent):
         # Get Q(s,a) for actions taken and weigh
         actions = action.unsqueeze(-1).expand(self.num_heads, -1, -1)
         state_action_values = self.policy(state).gather(2, actions).squeeze()
-        state_action_values *= alpha
+        state_action_values = torch.sum(alpha * state_action_values, dim=0)
 
         # Get V(s') for the new states w/ mask for final state
-        next_state_values, _ = torch.max(self.target(new_state).detach(), dim=2)
-        next_state_values[:, done] = 0
+        with torch.no_grad():
+            all_next_states = self.target(new_state)
+            all_next_states = torch.sum(all_next_states * alpha.unsqueeze(-1).expand(-1, -1, self.action_space),
+                                        dim=0)
+            next_state_values, _ = torch.max(all_next_states, dim=1)
+            next_state_values[done] = 0
 
         # Get expected Q values
-        expected_state_action_values = (alpha * next_state_values * self.gamma) + reward
+        expected_state_action_values = (next_state_values * self.gamma) + reward
 
         # Compute loss
         loss = self.loss(state_action_values, expected_state_action_values)
-        loss = loss.sum()
 
         # Optimize w/ Clipping
         self.optimizer.zero_grad()
@@ -389,7 +392,7 @@ class QROffDQNAgent(Agent):
         print('Utilizing device {}'.format(self.device))
         self.policy = QRDQNDense(observation_space, action_space, self.num_quantiles).to(self.device)
         self.target = QRDQNDense(observation_space, action_space, self.num_quantiles).to(self.device)
-        self.target.load_state_dict(self.target.state_dict())
+        self.target.load_state_dict(self.policy.state_dict())
         self.target.eval()
         self.optimizer = Adam(self.policy.parameters(), lr=cfg['LEARNING_RATE'])
         self.loss = SmoothL1Loss(reduction='none')
