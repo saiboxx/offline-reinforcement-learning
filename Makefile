@@ -18,3 +18,6 @@ lunar-generate:
 
 lunar-train:
 	$(PYTHON_INTERPRETER) src/lunar/offline.py
+
+lunar-inference:
+	$(PYTHON_INTERPRETER) src/lunar/inference.py
