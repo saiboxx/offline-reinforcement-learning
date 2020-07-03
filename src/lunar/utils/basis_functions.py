@@ -2,7 +2,7 @@ import torch
 
 class RadialBasisFunction(object):
 
-    r"""
+    """
     CREDIT:
     Original code has been taken from https://github.com/rhololkeolke/lspi-python
     This version has been modified and ported to PyTorch
@@ -14,24 +14,6 @@ class RadialBasisFunction(object):
     :math:`\gamma` is a free parameter. This vector will be padded with
     0's on both sides proportional to the number of possible actions
     specified.
-    Parameters
-    ----------
-    means: list(numpy.array)
-        List of numpy arrays representing :math:`(\mu_1, \ldots, \mu_k)`.
-        Each :math:`\mu` is a numpy array with dimensions matching the state
-        vector this basis function will be used with. If the dimensions of each
-        vector are not equal than an exception will be raised. If no means are
-        specified then a ValueError will be raised
-    gamma: float
-        Free parameter which controls the size/spread of the Gaussian "bumps".
-        This parameter is best selected via tuning through cross validation.
-        gamma must be > 0.
-    num_actions: int
-        Number of actions. Must be in range [1, :math:`\infty`] otherwise
-        an exception will be raised.
-    Note
-    ----
-    The numpy arrays specifying the means are not copied.
     """
 
     def __init__(self,
@@ -56,10 +38,6 @@ class RadialBasisFunction(object):
         e^{-\gamma || s - \mu_k ||^2}, \cdots]`
         where the matrix will be padded with 0's on either side depending
         on the specified action index and the number of possible actions.
-        Returns
-        -------
-        numpy.array
-            The :math:`\phi` vector. Used by Policy to compute Q-value.
         """
         phi = torch.zeros(self.size).to(self.device)
         offset = (len(self.means) + 1) * action

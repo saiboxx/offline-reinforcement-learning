@@ -3,7 +3,7 @@ from collections import deque
 import numpy as np
 import torch
 import gym
-from src.atari.utils.preprocess import preprocess_state
+from src.atari_archive.utils.preprocess import preprocess_state
 
 class NoopResetEnv(gym.Wrapper):
     def __init__(self, env, noop_max=30):

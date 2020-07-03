@@ -4,10 +4,10 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from src.atari.utils.data import EnvDataset, Summary
-from src.atari.utils.networks import ConvEncoder
-from src.atari.utils.preprocess import preprocess_state
-from src.atari.agents import OfflineDQNAgent
+from src.atari_archive.utils.data import EnvDataset, Summary
+from src.atari_archive.utils.networks import ConvEncoder
+from src.atari_archive.utils.preprocess import preprocess_state
+from src.atari_archive.agents import OfflineDQNAgent
 
 
 def main():

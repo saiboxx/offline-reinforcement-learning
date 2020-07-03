@@ -13,10 +13,10 @@ from torchsummary import summary
 from torchvision.utils import save_image
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToPILImage, Grayscale, Resize, ToTensor
-from src.atari.utils.networks import VAE, AE, ConvEncoder, ConvDecoder, Encoder, Decoder
-from src.atari.utils.data import VAEDataset
-from src.atari.utils.preprocess import preprocess_state
-from src.atari.utils.env_wrapper import NoopResetEnv, MaxAndSkipEnv
+from src.atari_archive.utils.networks import VAE, AE, ConvEncoder, ConvDecoder, Encoder, Decoder
+from src.atari_archive.utils.data import VAEDataset
+from src.atari_archive.utils.preprocess import preprocess_state
+from src.atari_archive.utils.env_wrapper import NoopResetEnv, MaxAndSkipEnv
 
 
 def main():

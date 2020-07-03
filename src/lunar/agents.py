@@ -12,6 +12,10 @@ from src.lunar.utils.data import Summary
 
 
 class Agent(object):
+    """
+    Base class for agents.
+    """
+
     def __init__(self, observation_space: int, action_space: int, *args):
         self.observation_space = observation_space
         self.action_space = action_space
@@ -19,9 +23,17 @@ class Agent(object):
         self.summary_writer = None
 
     def add_summary_writer(self, summary_writer: Summary):
+        """
+        Adds a Summary writer for logging.
+        :param summary_writer: Summary object
+        """
         self.summary_writer = summary_writer
 
     def act(self, state: np.ndarray) -> np.ndarray:
+        """
+        Decide which action to take given a current state
+        :param state: Current state
+        """
         pass
 
     def add_experience(self,
@@ -30,15 +42,32 @@ class Agent(object):
                        reward: np.ndarray,
                        done: np.ndarray,
                        new_state: np.ndarray):
+        """
+        Add an experience to the replay buffer
+        :param state: State
+        :param action: Action
+        :param reward: Reward
+        :param done: Done
+        :param new_state: New State
+        """
         pass
 
     def learn(self, *args):
+        """
+        Do one update step for the implemented algorithm
+        """
         pass
 
     def print_model(self):
+        """
+        Print the PyTorch model structure.
+        """
         pass
 
     def save(self, *args):
+        """
+        Saves the model to disc.
+        """
         pass
 
     def __repr__(self):
@@ -46,6 +75,9 @@ class Agent(object):
 
 
 class RandomAgent(Agent):
+    """
+    Executes Random Actions
+    """
     def __init__(self, observation_space: int, action_space: int):
         super().__init__(observation_space, action_space)
         self.name = 'RandomAgent'
@@ -55,6 +87,9 @@ class RandomAgent(Agent):
 
 
 class DQNAgent(Agent):
+    """
+    Classic Online DQN Agent
+    """
     def __init__(self, observation_space: int, action_space: int):
         super().__init__(observation_space, action_space)
         self.name = 'DQNAgent'
@@ -158,6 +193,9 @@ class DQNAgent(Agent):
 
 
 class OfflineDQNAgent(Agent):
+    """
+    DQN Agent that is able to learn completely offline.
+    """
     def __init__(self, observation_space: int, action_space: int, cfg: dict):
         super().__init__(observation_space, action_space)
         self.name = 'OfflineDQNAgent'
@@ -236,6 +274,9 @@ class OfflineDQNAgent(Agent):
 
 
 class EnsembleOffDQNAgent(Agent):
+    """
+    Implementation of Ensemble-DQN
+    """
     def __init__(self, observation_space: int, action_space: int, cfg: dict):
         super().__init__(observation_space, action_space)
         self.name = 'EnsembleOffDQNAgent'
@@ -318,6 +359,9 @@ class EnsembleOffDQNAgent(Agent):
 
 
 class REMOffDQNAgent(EnsembleOffDQNAgent):
+    """
+    Implementation of Random Ensemble Mixture (REM) DQN
+    """
     def __init__(self, observation_space: int, action_space: int, cfg: dict):
         super().__init__(observation_space, action_space, cfg)
         self.name = 'REMOffDQNAgent'
@@ -376,6 +420,9 @@ class REMOffDQNAgent(EnsembleOffDQNAgent):
 
 
 class QROffDQNAgent(Agent):
+    """
+    Implementation of QR-DQN
+    """
     def __init__(self, observation_space: int, action_space: int, cfg: dict):
         super().__init__(observation_space, action_space)
         self.name = 'QROffDQNAgent'
@@ -467,6 +514,9 @@ class QROffDQNAgent(Agent):
 
 
 class OfflineLSPIAgent(Agent):
+    """
+    LSPI algorithm with LSTDQ. Warning: Algorithm potentially has mistakes in it!
+    """
     def __init__(self, observation_space: int, action_space: int, cfg: dict):
         super().__init__(observation_space, action_space)
         self.name = 'OfflineLSPIDQNAgent'

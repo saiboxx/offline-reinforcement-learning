@@ -2,6 +2,9 @@ from torch import nn, tensor
 
 
 class DQNDense(nn.Module):
+    """
+    DQN Multilayer Perceptron for vector inputs.
+    """
     def __init__(self, observation_space: int, action_space: int):
         super(DQNDense, self).__init__()
         self.fc1 = nn.Linear(in_features=observation_space, out_features=128)
@@ -24,6 +27,11 @@ class DQNDense(nn.Module):
 
 
 class DQNMultiHead(nn.Module):
+    """
+    DQN Multi-Head Network for vector inputs. Network uses 1D-Convolutions with
+    kernel size 1 and grouped convolutions to simulate parallel computation
+    of the respective heads.
+    """
     def __init__(self, observation_space: int, action_space: int, num_heads: int):
         super(DQNMultiHead, self).__init__()
         self.num_heads = num_heads
@@ -55,6 +63,9 @@ class DQNMultiHead(nn.Module):
 
 
 class QRDQNDense(nn.Module):
+    """
+    Network for Quantile Regression DQN.
+    """
     def __init__(self, observation_space: int, action_space: int, num_quant: int):
         super(QRDQNDense, self).__init__()
         self.action_space = action_space

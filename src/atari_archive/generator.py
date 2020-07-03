@@ -6,10 +6,10 @@ from tqdm import tqdm
 import random
 import torch
 from torch import tensor
-from src.atari.utils.networks import ConvEncoder
-from src.atari.agents import RandomAgent, DQNAgent, DoubleDQNAgent
-from src.atari.utils.data import DataSaver, Summary
-from src.atari.utils.env_wrapper import wrap_env
+from src.atari_archive.utils.networks import ConvEncoder
+from src.atari_archive.agents import RandomAgent, DQNAgent, DoubleDQNAgent
+from src.atari_archive.utils.data import DataSaver, Summary
+from src.atari_archive.utils.env_wrapper import wrap_env
 
 
 def main():

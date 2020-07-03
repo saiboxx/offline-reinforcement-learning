@@ -7,9 +7,9 @@ from torch import tensor
 from torch.optim import Adam
 from torch.nn import SmoothL1Loss
 import torchsummary
-from src.atari.utils.networks import DQNCNN, DQNCNNLight, DQNDense, DQNLSTM
-from src.atari.utils.replay_buffer import ReplayBuffer
-from src.atari.utils.data import Summary
+from src.atari_archive.utils.networks import DQNCNN, DQNCNNLight, DQNDense, DQNLSTM
+from src.atari_archive.utils.replay_buffer import ReplayBuffer
+from src.atari_archive.utils.data import Summary
 from torchvision.transforms import Compose, ToPILImage, Grayscale, Resize, ToTensor
 
 

@@ -16,6 +16,10 @@ def main():
 
 
 def train(cfg: dict):
+    """
+    Trains an agent in an offline setting. Parameters are passed via a config dict.
+    :param cfg: Dictionary with parameters.
+    """
     print('Loading environment LunarLander-v2.')
     env = gym.make('LunarLander-v2')
     env.reset()
@@ -73,6 +77,13 @@ def train(cfg: dict):
 
 
 def create_agent(observation_space: int, action_space: int, cfg: dict) -> Agent:
+    """
+    Agent Factory. Returns the fitting agent for the entry defined in the config.
+    :param observation_space: Observation Space
+    :param action_space: Actions space
+    :param cfg: Config dictionary
+    :return:
+    """
     if cfg['AGENT'] == 'DQN':
         return OfflineDQNAgent(observation_space, action_space, cfg)
     elif cfg['AGENT'] == 'ENSEMBLE':

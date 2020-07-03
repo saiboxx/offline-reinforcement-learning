@@ -7,6 +7,9 @@ from src.lunar.offline import create_agent
 
 
 def main():
+    """
+    Loads a model and starts n environments in inference mode.
+    """
     with open('config.yml', 'r') as ymlfile:
         cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
     for i in range(cfg['NUM_ENVS']):

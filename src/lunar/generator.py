@@ -9,6 +9,10 @@ from src.lunar.utils.data import DataSaver, Summary
 
 
 def main():
+    """
+    This script trains a DQN Agent on the Lunar Environment with
+    the sole purpose of collecting data for the offline RL task.
+    """
     with open('config.yml', 'r') as ymlfile:
         cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
     run(cfg)
