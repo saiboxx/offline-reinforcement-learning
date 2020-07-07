@@ -12,6 +12,9 @@ time and resource constraints I changed scope to create a proof of concept on th
 Subsequently the code in `atari_archive` is probably usable but deprecated in favor of the lunar lander section. I recommend
 to be cautious.
 
+This project occurred as part of the statistics seminar "Reinforcement Learning" at LMU Munich. The accompanying presentation with
+elaborated information is available in the `presentation` folder.
+
 ## How to use the repository
 
 Clone the project:
